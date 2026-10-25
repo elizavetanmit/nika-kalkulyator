@@ -173,7 +173,7 @@
         <label class="f">Ник в Telegram<input id="fTg" type="text" placeholder="@nick" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="off" maxlength="33"></label>
         <label class="chk"><input id="fConsent" type="checkbox"><span>Даю <a href="consent.html" target="_blank">согласие на обработку персональных данных</a>. <a href="policy.html" target="_blank">Политика обработки данных</a></span></label>
         <label class="chk"><input id="fNews" type="checkbox"><span>Хочу получать самые интересные новости Ники, без спама</span></label>
-        <button class="btn" type="submit" id="leadBtn">Отправить контакты</button>
+        <button class="btn" type="submit" id="leadBtn">Получить расчёт в Telegram</button>
         <p class="formmsg" id="formmsg" role="status"></p>
       </form>
       <div id="done" class="hidden"></div>
@@ -1009,13 +1009,14 @@
     leadForm.classList.remove("hidden"); leadDone.classList.add("hidden"); leadDone.innerHTML = "";
     leadMsg.textContent = ""; document.getElementById("leadBtn").disabled = false;
   }
+  // Одна кнопка: заявка уходит в CRM, и сразу открывается Telegram. Запасные ссылки остаются на странице на случай, если браузер не открыл Telegram сам.
   function showDone(code) {
+    var tgUrl = "https://t.me/" + BOT.user + "?start=" + encodeURIComponent(code);
     leadForm.classList.add("hidden");
-    leadDone.innerHTML = '<p><b>Спасибо, заявку получила.</b> Теперь нажмите кнопку, и расчёт придёт в Telegram: схема, таблица по отделениям и список, что проверить.</p>' +
-      '<a class="btn" href="https://t.me/' + BOT.user + '?start=' + encodeURIComponent(code) + '">Получить расчёт в Telegram</a>' +
+    leadDone.innerHTML = '<p><b>Заявка принята.</b> Telegram откроется сам. Если нет, <a href="' + tgUrl + '">откройте его здесь</a>.</p>' +
       (pdfUrl ? '<p class="policy">Нет Telegram? <a href="' + pdfUrl + '" download="Расчёт хранения.pdf">Скачать PDF</a></p>' : "");
     leadDone.classList.remove("hidden");
-    leadDone.scrollIntoView({ behavior: "smooth", block: "center" });
+    location.href = tgUrl;
   }
   leadForm.addEventListener("submit", function (e) {
     e.preventDefault();
@@ -1028,7 +1029,7 @@
     if (bad) { leadMsg.textContent = bad[1]; bad[0].focus(); return; }
     var btn = el("leadBtn"); btn.disabled = true; leadMsg.textContent = "Готовлю расчёт…";
     makePdf().catch(function () { return null; }).then(function (pdf) {
-      leadMsg.textContent = "Отправляю…";
+      leadMsg.textContent = "Отправляю и открываю Telegram…";
       return fetch(BOT.api, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({
         name: name, phone: el("fCc").value + " " + digits, tg: "@" + nick, consent: true, news: el("fNews").checked,
         calc: LAST, source: source(), pdf: pdf ? pdf.base64 : null }) })
