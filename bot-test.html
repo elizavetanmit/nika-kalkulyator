@@ -1,0 +1,1044 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Калькулятор хранения</title>
+<meta name="description" content="Посчитайте шкаф в прихожую, спальню, гардеробную, детскую, кухню или хозблок по ГОСТ 13025.1-85 и справочнику Нойферта.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Oswald:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #2E3222;
+    --ink-soft: #6b6e62;
+    --blue: #1D4870;
+    --terra: #765231;
+    --paper: #F1F0EE;
+    --white: #FFFFFF;
+    --line: #e4e2dd;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--white); color: var(--ink); font-family: "Montserrat", system-ui, sans-serif; font-weight: 300; font-size: 16px; line-height: 1.5; }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 24px 16px 64px; }
+  .frame { display: flex; justify-content: space-between; font-size: 12px; letter-spacing: .04em; color: var(--ink-soft); padding-bottom: 10px; border-bottom: 2px solid var(--blue); margin-bottom: 28px; }
+  h1, h2, h3, .verdict, .big { font-family: "Oswald", sans-serif; font-weight: 600; letter-spacing: .005em; }
+  h1 { font-size: clamp(34px, 9vw, 52px); line-height: 1.05; margin: 0 0 14px; text-transform: uppercase; }
+  h1 .acc { color: var(--blue); }
+  .dots { display: flex; gap: 6px; margin: 0 0 18px; }
+  .dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--blue); display: block; }
+  .lead { margin: 0 0 32px; font-size: 16px; }
+  section.step { margin: 0 0 34px; }
+  .stephead { display: flex; align-items: baseline; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 14px; }
+  .num { font-family: "Oswald", sans-serif; font-weight: 500; color: var(--blue); font-size: 22px; }
+  h2 { font-size: 22px; margin: 0; text-transform: uppercase; }
+  .hint { font-size: 14px; color: var(--ink-soft); margin: 0 0 14px; }
+  .types { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .types .type:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  @media (min-width: 560px) { .types { grid-template-columns: repeat(3, 1fr); } .types .type:last-child:nth-child(odd) { grid-column: auto; } }
+  .type { text-align: left; background: var(--white); border: 1.5px solid var(--line); border-radius: 12px; padding: 12px 12px 14px; cursor: pointer; font: inherit; color: var(--ink); }
+  .type svg { display: block; width: 44px; height: 44px; margin-bottom: 8px; }
+  .type b { display: block; font-family: "Oswald", sans-serif; font-weight: 500; font-size: 17px; text-transform: uppercase; line-height: 1.15; }
+  .type span { display: block; font-size: 12.5px; color: var(--ink-soft); margin-top: 4px; line-height: 1.35; }
+  .type[aria-pressed="true"] { border-color: var(--blue); background: var(--blue); color: var(--white); }
+  .type[aria-pressed="true"] span { color: #d9e2ec; }
+  .type[aria-pressed="true"] svg * { stroke: var(--white); }
+  .type:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, .btn:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .fields { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .fields.two { grid-template-columns: repeat(2, 1fr); }
+  label.f { display: block; font-size: 12.5px; color: var(--ink-soft); }
+  label.f input, label.f select { display: block; width: 100%; margin-top: 4px; padding: 11px 10px; font: inherit; font-weight: 600; font-size: 17px; color: var(--ink); background: var(--white); border: 1.5px solid var(--line); border-radius: 10px; }
+  label.f select { font-size: 15px; }
+  .unit { font-size: 12px; color: var(--ink-soft); margin-top: 8px; }
+  .seg { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 14px; }
+  .seg button { font: inherit; font-size: 14px; padding: 8px 14px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--white); color: var(--ink); cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--blue); border-color: var(--blue); color: var(--white); }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+  .row:first-child { border-top: 0; }
+  .row .name { font-size: 15px; font-weight: 400; }
+  .row .name small { display: block; color: var(--ink-soft); font-size: 12.5px; font-weight: 300; }
+  .stepper { display: flex; align-items: center; gap: 4px; flex: none; }
+  .stepper button { width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--white); font: inherit; font-size: 20px; line-height: 1; color: var(--blue); cursor: pointer; }
+  .stepper input { width: 56px; padding: 6px 2px; text-align: center; font: inherit; font-weight: 600; font-size: 17px; color: var(--ink); background: var(--white); border: 1.5px solid var(--line); border-radius: 10px; -moz-appearance: textfield; }
+  .stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .check { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); font-size: 15px; font-weight: 400; cursor: pointer; }
+  .check:first-child { border-top: 0; }
+  .check input { width: 20px; height: 20px; accent-color: var(--blue); margin-top: 2px; flex: none; }
+  .check small { display: block; color: var(--ink-soft); font-size: 12.5px; font-weight: 300; }
+  .hidden { display: none !important; }
+
+  .result { border-top: 2px solid var(--blue); padding-top: 18px; }
+  .verdict { font-size: clamp(26px, 7vw, 36px); line-height: 1.1; margin: 0 0 8px; text-transform: uppercase; }
+  .verdict.bad { color: var(--terra); }
+  .verdict.good { color: var(--blue); }
+  .sub { margin: 0 0 14px; }
+  .scheme { width: 100%; height: auto; display: block; margin: 10px 0 6px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; color: var(--ink-soft); margin-bottom: 14px; }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -2px; margin-right: 5px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+  td { padding: 9px 0; border-top: 1px solid var(--line); vertical-align: top; font-weight: 400; }
+  td.n { text-align: right; font-weight: 600; white-space: nowrap; padding-left: 12px; }
+  td small { display: block; color: var(--ink-soft); font-size: 12.5px; font-weight: 300; }
+  tr.total td { border-top: 2px solid var(--ink); font-weight: 600; }
+  tr.head td { border-top: 0; padding-top: 20px; font-family: "Oswald", sans-serif; font-weight: 500; text-transform: uppercase; color: var(--blue); }
+  h3 { font-size: 18px; margin: 26px 0 8px; text-transform: uppercase; }
+  ul.checks { list-style: none; padding: 0; margin: 0; }
+  ul.sizes { list-style: none; padding: 0; margin: 0; }
+  ul.sizes li { padding: 8px 0; font-size: 14.5px; border-top: 1px solid var(--line); }
+  ul.checks li { position: relative; padding: 8px 0 8px 28px; font-size: 14.5px; border-top: 1px solid var(--line); }
+  ul.checks li::before { position: absolute; left: 4px; top: 8px; font-weight: 600; }
+  ul.checks li.ok::before { content: "✓"; color: var(--blue); }
+  ul.checks li.warn::before { content: "!"; color: var(--terra); left: 9px; }
+
+  .next { background: var(--blue); color: var(--white); border-radius: 14px; padding: 22px 18px; margin-top: 30px; }
+  .next h2 { color: var(--white); margin-bottom: 10px; }
+  .next p, .next li { color: #e3eaf1; font-size: 15px; }
+  .next ul { padding-left: 20px; margin: 8px 0 14px; }
+  #lead { margin-top: 18px; }
+  #yaform iframe { display: block; width: 100%; height: 900px; border: 0; border-radius: 12px; background: var(--white); margin-top: 16px; }
+  .policy a { color: var(--white); }
+  .policy { font-size: 12.5px; color: #d3dde8; margin: 8px 0 0; }
+  .formmsg { font-size: 14px; color: var(--white); min-height: 1em; margin: 10px 0 0; }
+  button.btn { width: 100%; border: 0; cursor: pointer; }
+  button.btn[disabled] { opacity: .6; cursor: default; }
+  .btn { display: block; text-align: center; text-decoration: none; background: var(--white); color: var(--blue); font-family: "Oswald", sans-serif; font-weight: 500; font-size: 18px; text-transform: uppercase; letter-spacing: .02em; padding: 14px 16px; border-radius: 12px; margin-top: 16px; }
+  .sources { margin-top: 28px; border-top: 1px solid var(--line); padding-top: 10px; }
+  .sources ul { padding-left: 18px; font-size: 14px; }
+  .sources li { margin: 6px 0; }
+  .note { font-size: 13px; color: var(--ink-soft); }
+  footer { display: flex; justify-content: space-between; font-size: 12px; color: var(--ink-soft); margin-top: 28px; padding-top: 10px; border-top: 2px solid var(--blue); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="frame"><span>Ника Чередникова</span><span>Калькулятор хранения</span></div>
+  <h1>Сколько мебели <span class="acc">вам нужно</span>?</h1>
+  <div class="dots" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+  <p class="lead">Выберите, что проектируете, впишите размеры места и посчитайте вещи. Я переведу их в миллиметры штанги, полок и модулей.</p>
+
+  <section class="step">
+    <div class="stephead"><span class="num">01</span><h2>Что проектируем</h2></div>
+    <div class="types" id="types"></div>
+  </section>
+
+  <div id="work" class="hidden">
+    <section class="step">
+      <div class="stephead"><span class="num">02</span><h2 id="placeTitle">Место</h2></div>
+      <p class="hint" id="placeHint"></p>
+      <div id="placeExtra"></div>
+      <div id="place" class="fields"></div>
+      <p class="unit">Все размеры в миллиметрах.</p>
+    </section>
+
+    <section class="step" id="peopleStep">
+      <div class="stephead"><span class="num">03</span><h2>Кто пользуется</h2></div>
+      <p class="hint">По составу семьи я подставлю примерный набор вещей. Дальше его можно поправить.</p>
+      <div id="people"></div>
+    </section>
+
+    <section class="step">
+      <div class="stephead"><span class="num" id="itemsNum">04</span><h2 id="itemsTitle">Что будет храниться</h2></div>
+      <p class="hint" id="itemsHint">Цифры стоят примерные. Поправьте те, что знаете точно.</p>
+      <div id="items"></div>
+    </section>
+
+    <section class="result" id="result" aria-live="polite"></section>
+
+    <section class="next" id="after">
+      <h2>Что калькулятор не увидит</h2>
+      <p id="unseenIntro"></p>
+      <ul id="unseen"></ul>
+      <p>Такие мелочи лучше обсудить со специалистом до того, как заказывать мебель. Можем сделать это с вами на созвоне.</p>
+      <p class="hidden" id="sent"><b>Ваша заявка уже у нас:</b> напишу вам в мессенджер, и договоримся о созвоне.</p>
+    </section>
+
+    <section class="next" id="gate">
+      <h2>Получить расчёт в Telegram</h2>
+      <p id="notYet"></p>
+      <p>Пришлю этот расчёт в Telegram вместе со списком, что проверить в проекте. А как из него сделать мебель, которая встанет в вашу квартиру, давайте обсудим на созвоне: расскажете, что храните и что не устраивает сейчас, а я посмотрю расчёт и подскажу, с чего начать.</p>
+      <div id="lead">
+        <button class="btn" type="button" id="leadBtn">Получить расчёт в Telegram</button>
+        <p class="formmsg" id="formmsg" role="status"></p>
+        <p class="policy">Нет Telegram? <a href="#" id="formLink">Оставьте заявку через форму</a>.</p>
+        <div id="yaform"></div>
+        <p class="policy">Как мы храним и защищаем данные: <a href="policy.html" target="_blank">Политика обработки персональных данных</a></p>
+      </div>
+    </section>
+
+    <section class="sources">
+      <h3>Источники</h3>
+      <ul>
+        <li>ГОСТ 13025.1-85 «Мебель бытовая. Функциональные размеры отделений для хранения».</li>
+        <li>Нойферт П., Нефф Л. «Проектирование и строительство. Дом, квартира, сад». 2005.</li>
+      </ul>
+    </section>
+  </div>
+
+  <footer><span>@cherednikova.design</span><a href="policy.html" style="color:inherit">Политика обработки данных</a></footer>
+</div>
+
+<script>
+(function () {
+  // После отправки Яндекс Форма перенаправляет на эту же страницу с ?ok=1.
+  // Если перенаправление случилось внутри фрейма формы, открываем расчёт на основной странице и дальше не работаем.
+  var OK = false; try { OK = new URLSearchParams(location.search).get("ok") === "1"; } catch (e) {}
+  if (OK && window.parent !== window) { try { window.parent.__calcOpen(); } catch (e) {} return; }
+  function store(k, v) { try { sessionStorage.setItem(k, v); } catch (e) {} }
+  function load(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }
+  var OPEN = OK || load("calcOpen") === "1";
+  if (OK) store("calcOpen", "1");
+
+  // Нормы в мм. ГОСТ 13025.1-85; Нойферт П., Нефф Л. «Проектирование и строительство. Дом, квартира, сад» (2005), с. 113–119, 131, 134.
+  var N = {
+    rodTop: 1900, rodGap: 50, longH: 1400, longDressH: 1600, shortH: 900,
+    hanger: 75, coat: 80, dress: 50,
+    depthGost: 560, depthCoat: 700, depthLight: 500,
+    pair: 250, shoeRow: 170, bootRow: 420, shoeRowsMax: 3, // в секции с полками обувь не выше 3 рядов
+    hangerW: 450, kidHangerW: 350, // самое узкое отделение под штангу: одна вешалка
+    chest: 1300, // уровень груди: сюда шапки и шарфы
+    stackW: 300, linenW: 400, stackH: 250, shelfStep: 300,
+    thin: 12, thick: 60, towel: 60, bedding: 0.11, hat: 300, hatShelf: 170, topMin: 200, // антресоль ниже 200 мм не считаю
+    // Стопки не выше, чем у Нойферта, иначе разваливаются: 12 пододеяльников 140 мм, 12 простыней 130 мм,
+    // 24 наволочки 160 мм.
+    duvetPer: 12, sheetPer: 12, pillowPer: 24,
+    panel: 16, walkDepth: 550, walkPass: 900, dressArea: 1500,
+    // Детские вещи, шарфы и сумки: норм нет, допущения Ники (см. вики, nika-lead-magnet-plan).
+    kidCoat: 60, kidZone: 900, kidPair: 180, kidHat: 200, bag: 300, bagRow: 350,
+    // Стопки по живым замерам: 3 шапки 300 × 200 × 120 мм, как рубашки у Нойферта; 4 шарфа 400 × 350 × 200 мм.
+    // Детские шапки: замера нет, допущение — тоже по 3 и 120 мм высотой, но 250 × 150 мм.
+    // Торцевой штанге нужно отделение шириной с вешалку.
+    hatPer: 3, hatStack: [300, 200], kidHatStack: [250, 150], scarfPer: 4, scarfStack: [400, 350], endW: 650, kidEndW: 450
+  };
+
+  function fmt(n) { return Math.round(n).toLocaleString("ru-RU"); }
+  function mm(n) { return fmt(n) + " мм"; }
+  function pl(n, a, b, c) { var m = n % 10, h = n % 100; return n + " " + ((m === 1 && h !== 11) ? a : (m >= 2 && m <= 4 && (h < 12 || h > 14)) ? b : c); }
+  function up(x, s) { return x <= 0 ? 0 : Math.ceil(x / s) * s; }
+
+  var ITEM = {
+    coats:   ["Пальто и длинные пуховики", "висят во всю высоту"],
+    jackets: ["Куртки и короткие пуховики", "висят в два яруса"],
+    dress:   ["Длинные платья и халаты", "ниже колена"],
+    hang:    ["Вещи на плечиках", "рубашки, блузки, пиджаки, брюки, юбки"],
+    thin:    ["Тонкие сложенные вещи", "футболки, майки, тонкие рубашки"],
+    thick:   ["Объёмные сложенные вещи", "свитера, худи, джинсы, пижамы"],
+    shoes:   ["Обувь, пар", "туфли, кроссовки, ботинки"],
+    boots:   ["Сапоги, пар", "высокие"],
+    hats:    ["Головные уборы", "шапки, кепки, шляпы"],
+    kcoats:  ["Детские пальто", "висят на плечиках"],
+    kjackets:["Детские куртки", "куртки, пуховики, комбинезоны"],
+    kshoes:  ["Детская обувь, пар", "кроссовки, ботинки, сапожки"],
+    khats:   ["Детские головные уборы", "шапки, кепки, панамы"],
+    scarves: ["Шарфы", "шарфы, палантины, снуды"],
+    bags:    ["Сумки и рюкзаки", "повседневные"],
+    linen:   ["Комплекты постельного белья", "простыня, пододеяльник, наволочки"],
+    towels:  ["Банные полотенца", "большие"],
+    bedding: ["Запасные одеяла и подушки", "комплектов"]
+  };
+
+  var ICON = {
+    hall: '<rect x="8" y="4" width="28" height="36" rx="1"/><line x1="22" y1="4" x2="22" y2="40"/><line x1="10" y1="12" x2="20" y2="12"/><path d="M12 12v14h6V12"/><line x1="24" y1="32" x2="34" y2="32"/>',
+    bed: '<rect x="6" y="4" width="32" height="36" rx="1"/><line x1="17" y1="4" x2="17" y2="40"/><line x1="28" y1="4" x2="28" y2="40"/><line x1="8" y1="12" x2="15" y2="12"/><line x1="30" y1="14" x2="36" y2="14"/><line x1="30" y1="22" x2="36" y2="22"/><line x1="30" y1="30" x2="36" y2="30"/>',
+    kitchen: '<rect x="4" y="22" width="36" height="18" rx="1"/><rect x="6" y="6" width="32" height="10" rx="1"/><circle cx="14" cy="22" r="0.5"/><line x1="16" y1="22" x2="16" y2="40"/><line x1="28" y1="22" x2="28" y2="40"/><circle cx="34" cy="20" r="2"/>'
+  };
+
+  var TYPES = [
+    { id: "hall", name: "Прихожая", sub: "верхняя одежда, обувь, головные уборы", items: ["coats", "jackets", "kcoats", "kjackets", "shoes", "boots", "kshoes", "hats", "khats", "scarves", "bags"],
+      per: { a: { coats: 1, jackets: 2, shoes: 4, boots: 1, hats: 2, scarves: 3, bags: 2 }, c: { kcoats: 1, kjackets: 2, kshoes: 4, khats: 2, scarves: 2, bags: 1 } }, place: { W: 1200, H: 2600, D: 600 } },
+    { id: "bed", name: "Шкаф в спальню", sub: "одежда, бельё, постельное", items: ["dress", "hang", "thin", "thick", "linen", "towels", "bedding"],
+      per: { a: { dress: 2, hang: 15, thin: 20, thick: 10, linen: 1.5, towels: 3, bedding: 0.5 }, c: {} }, place: { W: 2400, H: 2600, D: 600 } },
+    { id: "kitchen", name: "Кухня", sub: "прямая кухня: техника, мойка, шкафы", place: { A: 3000, H: 2700 } }
+  ];
+
+  var S = { type: null, adults: 2, kids: 0, touched: {}, counts: {}, place: {}, kitchen: { top: "yes", cooker: "hob", stove: 600, hob: "electric", fridge: 600, oven: "under", dw: 450, sink: 600, burners: 4, mw: "upper" } };
+
+  var T = function () { return TYPES.filter(function (t) { return t.id === S.type; })[0]; };
+
+  // ---------- Выбор типа ----------
+  var typesBox = document.getElementById("types");
+  TYPES.forEach(function (t) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "type"; b.setAttribute("aria-pressed", "false"); b.dataset.id = t.id;
+    b.innerHTML = '<svg viewBox="0 0 44 44" fill="none" stroke="#1D4870" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICON[t.id] + '</svg><b>' + t.name + '</b><span>' + t.sub + '</span>';
+    b.onclick = function () { selectType(t.id); };
+    typesBox.appendChild(b);
+  });
+
+  function selectType(id) {
+    S.type = id; S.touched = {}; S.counts = {};
+    var t = T();
+    S.place = JSON.parse(JSON.stringify(t.place));
+    if (S.adults === 0) { S.adults = 2; }
+    typesBox.querySelectorAll(".type").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.id === id ? "true" : "false"); });
+    document.getElementById("work").classList.remove("hidden");
+    defaults(); buildPlace(); buildPeople(); buildItems(); render();
+  }
+
+  function defaults() {
+    var t = T(); if (!t.items) return;
+    t.items.forEach(function (k) {
+      if (S.touched[k]) return;
+      var a = t.per.a[k] || 0, c = t.per.c[k] || 0;
+      S.counts[k] = Math.round(a * S.adults + c * S.kids);
+    });
+  }
+
+  // ---------- Поля ----------
+  function field(key, label, min, max) {
+    return '<label class="f">' + label + '<input type="number" inputmode="numeric" data-p="' + key + '" min="' + min + '" max="' + max + '" value="' + S.place[key] + '"></label>';
+  }
+  function seg(name, opts, cur) {
+    return '<div class="seg" data-seg="' + name + '">' + opts.map(function (o) {
+      return '<button type="button" data-v="' + o[0] + '" aria-pressed="' + (String(o[0]) === String(cur)) + '">' + o[1] + '</button>';
+    }).join("") + '</div>';
+  }
+
+  function buildPlace() {
+    var id = S.type, html = "", extra = "", hint = "", title = "Место";
+    var place = document.getElementById("place");
+    place.className = "fields";
+    if (id === "hall" || id === "bed") {
+      title = "Место под шкаф";
+      hint = "Глубину считайте до внутренней стороны дверей.";
+      html = field("W", "Ширина", 400, 8000) + field("H", "Высота", 1000, 3500) + field("D", "Глубина", 200, 1200);
+    } else if (id === "kitchen") {
+      title = "Стена под кухню";
+      hint = "Длина стены, вдоль которой встанет кухня.";
+      html = field("A", "Длина стены", 1000, 9000) + field("H", "Потолок", 2000, 4000);
+      place.className = "fields two";
+    }
+    document.getElementById("placeTitle").textContent = title;
+    document.getElementById("placeHint").textContent = hint;
+    document.getElementById("placeExtra").innerHTML = extra;
+    place.innerHTML = html;
+    place.querySelectorAll("input").forEach(function (inp) {
+      inp.addEventListener("input", function () { var v = parseFloat(inp.value); if (isFinite(v)) S.place[inp.dataset.p] = v; render(); });
+    });
+    document.querySelectorAll("#placeExtra .seg button").forEach(function (b) {
+      b.onclick = function () {
+        var name = b.parentNode.dataset.seg;
+        buildPlace(); render();
+      };
+    });
+  }
+
+  function stepper(key, get, set, max) {
+    var row = document.createElement("div");
+    row.className = "stepper";
+    row.innerHTML = '<button type="button" aria-label="Меньше">−</button><input type="number" inputmode="numeric" min="0" max="' + max + '" aria-label="Количество" value="' + get() + '"><button type="button" aria-label="Больше">+</button>';
+    var inp = row.querySelector("input"), bs = row.querySelectorAll("button");
+    function put(v) { set(Math.max(0, Math.min(max, v))); render(); }
+    function ch(d) { put(get() + d); inp.value = get(); }
+    bs[0].onclick = function () { ch(-1); }; bs[1].onclick = function () { ch(1); };
+    // Число можно вписать руками: пока поле пустое, расчёт держит прежнее значение.
+    inp.addEventListener("input", function () { var v = parseInt(inp.value, 10); if (isFinite(v)) put(v); });
+    inp.addEventListener("change", function () { inp.value = get(); });
+    inp.addEventListener("focus", function () { inp.select(); });
+    row._sync = function () { inp.value = get(); };
+    return row;
+  }
+
+  var itemSteppers = [];
+  function buildPeople() {
+    var t = T(), box = document.getElementById("people"), step = document.getElementById("peopleStep");
+    box.innerHTML = "";
+    if (!t.items) { step.classList.add("hidden"); return; }
+    step.classList.remove("hidden");
+    var who = [["adults", "Взрослые"], ["kids", "Дети"]];
+    who.forEach(function (w) {
+      var r = document.createElement("div"); r.className = "row";
+      r.innerHTML = '<span class="name">' + w[1] + '</span>';
+      r.appendChild(stepper(w[0], function () { return S[w[0]]; }, function (v) {
+        S[w[0]] = v;
+        defaults(); itemSteppers.forEach(function (s) { s._sync(); });
+      }, 8));
+      box.appendChild(r);
+    });
+  }
+
+  function buildItems() {
+    var t = T(), box = document.getElementById("items");
+    box.innerHTML = ""; itemSteppers = [];
+    document.getElementById("itemsNum").textContent = t.items ? "04" : "03";
+    if (t.items) {
+      document.getElementById("itemsTitle").textContent = "Что будет храниться";
+      document.getElementById("itemsHint").textContent = "Цифры стоят примерные. Поправьте те, что знаете точно.";
+      t.items.forEach(function (k) {
+        var r = document.createElement("div"); r.className = "row";
+        r.innerHTML = '<span class="name">' + ITEM[k][0] + '<small>' + ITEM[k][1] + '</small></span>';
+        var st = stepper(k, function () { return S.counts[k] || 0; }, function (v) { S.counts[k] = v; S.touched[k] = true; }, 300);
+        itemSteppers.push(st); r.appendChild(st); box.appendChild(r);
+      });
+    } else if (S.type === "kitchen") {
+      document.getElementById("itemsTitle").textContent = "Техника и мойка";
+      document.getElementById("itemsHint").textContent = "Выберите, что встанет в кухню.";
+      var k = S.kitchen, stove = k.cooker === "stove", noTop = k.top === "no";
+      if (noTop && k.mw === "upper") k.mw = "counter";
+      box.innerHTML =
+        '<div class="fields two">' +
+        sel("top", "Верхние шкафы", [["yes", "С верхними шкафами"], ["no", "Без верхних шкафов"]], noTop ? "no" : "yes") +
+        sel("fridge", "Холодильник", [[0, "Не у этой стены"], [550, "550 мм"], [600, "600 мм"], [700, "700 мм"], [800, "800 мм"]], k.fridge) +
+        sel("cooker", "Плита", [["hob", "Варочная панель"], ["stove", "Отдельно стоящая плита"]], k.cooker || "hob") +
+        (stove
+          ? sel("stove", "Ширина плиты", [[500, "500 мм"], [600, "600 мм"]], k.stove || 600)
+          : sel("burners", "Варочная панель", [[2, "2 конфорки"], [3, "3 конфорки"], [4, "4 конфорки"]], k.burners || 4)) +
+        sel("hob", "Газ или электричество", [["gas", "Газовая"], ["electric", "Электрическая"], ["induction", "Индукционная"]], k.hob) +
+        (stove ? "" : sel("oven", "Духовка", [["under", "Под варочной"], ["column", "В пенале"], ["none", "Нет"]], k.oven)) +
+        sel("mw", "Микроволновка", [["upper", "В верхнем шкафу"], ["counter", "На столешнице"], ["column", "В пенале"], ["none", "Нет"]].filter(function (o) { return !noTop || o[0] !== "upper"; }), k.mw || "none") +
+        sel("dw", "Посудомойка", [[0, "Нет"], [450, "450 мм"], [600, "600 мм"]], k.dw) +
+        sel("sink", "Мойка", [[450, "В модуль 450 мм"], [600, "В модуль 600 мм"], [860, "Чаша с крылом, 860 мм"], [1240, "Две чаши, 1 240 мм"]], k.sink) +
+        '</div>';
+      box.querySelectorAll("select").forEach(function (s) {
+        s.onchange = function () {
+          var v = s.value; k[s.dataset.k] = isNaN(+v) ? v : +v;
+          if (s.dataset.k === "cooker" || s.dataset.k === "top") buildItems();
+          render();
+        };
+      });
+    }
+  }
+  function sel(key, label, opts, cur) {
+    return '<label class="f">' + label + '<select data-k="' + key + '">' + opts.map(function (o) {
+      return '<option value="' + o[0] + '"' + (String(o[0]) === String(cur) ? " selected" : "") + '>' + o[1] + '</option>';
+    }).join("") + '</select></label>';
+  }
+
+  // ---------- Расчёт шкафов ----------
+  function wardrobe(W, H, D, c, opt) {
+    var r = { W: W, H: H, D: D, sections: [] };
+    var rodTop = Math.min(N.rodTop, H - N.rodGap);
+    r.rodTop = rodTop;
+    var coats = c.coats || 0, dress = c.dress || 0, hang = c.hang || 0;
+    r.longZone = dress > 0 ? N.longDressH : N.longH;
+    r.longW = Math.ceil(coats * N.coat + dress * N.dress);
+    r.tiers = H >= 2000 ? 2 : 1;
+    r.hangLen = hang * N.hanger;
+    r.shortW = Math.ceil(r.hangLen / r.tiers);
+    r.levels = Math.max(1, Math.floor(Math.min(H, 1950) / N.shelfStep));
+    r.s300 = Math.ceil(((c.thin || 0) * N.thin + (c.thick || 0) * N.thick) / N.stackH) + Math.ceil((c.towels || 0) * N.towel / N.stackH);
+
+    // Детские пальто короче взрослых: отдельная штанга с отделением 900 мм.
+    r.kidN = c.kcoats || 0;
+    r.kidW = Math.ceil(r.kidN * N.kidCoat);
+    // Куртки, взрослые и детские, короткие: как вещи на плечиках, в два яруса по 900 мм.
+    r.jackLen = (c.jackets || 0) * N.coat + (c.kjackets || 0) * N.kidCoat;
+    r.jackW = Math.ceil(r.jackLen / r.tiers);
+
+    // Мелкий шкаф: вешалки поперёк не встают, ставлю торцевые выдвижные штанги.
+    // Штанга идёт вглубь шкафа, вещей на ней по её длине, а отделение под каждую шириной с вешалку.
+    r.endRod = D < N.depthLight;
+    if (r.endRod) {
+      r.rodLen = Math.max(150, D - 50);
+      r.longRods = Math.ceil(r.longW / r.rodLen); r.kidRods = Math.ceil(r.kidW / r.rodLen); r.shortRods = Math.ceil(r.shortW / r.rodLen); r.jackRods = Math.ceil(r.jackW / r.rodLen);
+      r.longW = r.longRods * N.endW; r.kidW = r.kidRods * N.kidEndW; r.shortW = r.shortRods * N.endW; r.jackW = r.jackRods * N.endW;
+    } else {
+      // Отделение не уже одной вешалки, даже если вещей мало.
+      if (r.longW) r.longW = Math.max(r.longW, N.hangerW);
+      if (r.kidW) r.kidW = Math.max(r.kidW, N.kidHangerW);
+      if (r.shortW) r.shortW = Math.max(r.shortW, N.hangerW);
+      if (r.jackW) r.jackW = Math.max(r.jackW, N.hangerW);
+    }
+
+    // Обувь: сначала под одеждой на штангах, остальное в отдельную секцию.
+    var left = { shoes: c.shoes || 0, boots: c.boots || 0, kshoes: c.kshoes || 0 };
+    var KIND = { shoes: [N.pair, N.shoeRow], boots: [N.pair, N.bootRow], kshoes: [N.kidPair, N.shoeRow] };
+    function fill(width, height, order) {
+      // Пробую несколько порядков рядов и беру тот, где пар встаёт больше всего.
+      var best = null;
+      order.forEach(function (ord) {
+        var h = height, got = { shoes: 0, boots: 0, kshoes: 0 }, rows = 0;
+        ord.forEach(function (kd) {
+          var per = Math.floor(width / KIND[kd][0]); if (!per || !left[kd]) return;
+          var rw = Math.min(Math.ceil(left[kd] / per), Math.floor(h / KIND[kd][1]));
+          got[kd] = Math.min(left[kd], rw * per); h -= rw * KIND[kd][1]; rows += rw * KIND[kd][1];
+        });
+        var sum = got.shoes + got.boots + got.kshoes;
+        if (!best || sum > best.sum) best = { got: got, sum: sum, h: rows };
+      });
+      for (var kd in best.got) left[kd] -= best.got[kd];
+      return best;
+    }
+    var ORD = [["shoes", "kshoes", "boots"], ["kshoes", "shoes", "boots"], ["boots", "shoes", "kshoes"]];
+    // Детская обувь сначала под детской одеждой, потом остальное под взрослой.
+    var u2 = r.kidW ? fill(r.kidW, rodTop - N.kidZone, [ORD[1], ORD[0], ORD[2]]) : { sum: 0, h: 0 };
+    var u1 = r.longW ? fill(r.longW, rodTop - r.longZone, ORD) : { sum: 0, h: 0 };
+    r.under = u1.sum; r.underH = u1.h; r.underKid = u2.sum; r.underKidH = u2.h; r.u1 = u1.got || {}; r.u2 = u2.got || {}; r.left = left;
+    r.restPairs = left.shoes + left.boots + left.kshoes; r.shoeW = 0;
+
+    // Антресоль: туда кладу то, чем пользуются не каждый день. Сначала запасные одеяла и подушки,
+    // в оставшееся место постельное бельё; на полки уходит только то, что наверх не влезло.
+    r.topH = Math.max(0, H - 1950);
+    function shelfOf(s300, s400) { var raw = (s300 * N.stackW + s400 * N.linenW) / r.levels; return raw > 0 ? Math.max(s400 ? N.linenW : N.stackW, up(raw, 50)) : 0; }
+    // Бельё стопками по видам, каждая стопка на место 400 мм; в комплекте пододеяльник, простыня и две наволочки.
+    var sets = c.linen || 0, depth = D || N.walkDepth;
+    r.linenStacks = sets ? Math.ceil(sets / N.duvetPer) + Math.ceil(sets / N.sheetPer) + Math.ceil(sets * 2 / N.pillowPer) : 0;
+    var topW = r.longW + r.kidW + r.jackW + r.shortW + r.shoeW + shelfOf(r.s300, 0);
+    // Высокую антресоль делю полкой через 300 мм, чтобы стопки не стояли друг на друге.
+    r.topLevels = r.topH >= N.topMin ? Math.max(1, Math.floor(r.topH / N.shelfStep)) : 0;
+    r.topVol = r.topLevels ? topW * depth * r.topH / 1e9 : 0;
+    r.beddingVol = (c.bedding || 0) * N.bedding;
+    r.bedW = r.topVol ? Math.ceil(r.beddingVol * 1e9 / (depth * r.topH)) : 0;
+    r.linenTop = Math.min(r.linenStacks, Math.max(0, Math.floor((topW - r.bedW) / N.linenW)) * r.topLevels);
+    r.s400 = r.linenStacks - r.linenTop;
+    r.shelfW = shelfOf(r.s300, r.s400);
+
+    // Стопку кладу длинной стороной вглубь, если полка позволяет: так она занимает меньше ширины.
+    function along(st) { return D >= st[0] ? st[1] : st[0]; }
+    r.hatLen = Math.ceil((c.hats || 0) / N.hatPer) * along(N.hatStack) + Math.ceil((c.khats || 0) / N.hatPer) * along(N.kidHatStack) + Math.ceil((c.scarves || 0) / N.scarfPer) * along(N.scarfStack);
+    r.bagLen = (c.bags || 0) * N.bag;
+    r.accLen = r.hatLen + r.bagLen;
+    var base = r.longW + r.kidW + r.shortW + r.shelfW;
+    var topLevels = r.topH >= N.bagRow ? Math.floor(r.topH / N.bagRow) : 0;
+    // Куртки в один ярус над обувью: ширина штанги, а при мелком шкафу — торцевые штанги.
+    var jack1 = r.jackLen ? (r.endRod ? Math.ceil(r.jackLen / r.rodLen) * N.endW : Math.max(N.hangerW, Math.ceil(r.jackLen))) : 0;
+
+    // Секция с полками. Внизу только обувь, не больше 3 рядов: туфли, детская обувь и сапоги в одних рядах,
+    // ряд с сапогами высокий. Над обувью слева штанга для курток, если хватает высоты, справа полки через 350 мм:
+    // ближе к уровню груди шапки и шарфы, на свободных полках сумки. Что из сумок не встало — наверх, над штангу;
+    // остаток наверху под чемоданы. Ширину беру самую узкую, где всё встаёт.
+    r.shoeRows = 0; r.shoeH = 0; r.accLevels = 0; r.jackIn = false; r.jackInW = 0; r.shelfPartW = 0;
+    r.hatShelves = 0; r.bagShelves = 0; r.bagShelf = 0;
+    if (r.restPairs > 0 || r.hatLen > 0 || r.bagLen > (base + r.jackW) * topLevels) {
+      var L = left.shoes * N.pair + left.kshoes * N.kidPair + left.boots * N.pair;
+      for (var w = 300; w <= 6000; w += 50) {
+        var rows = Math.ceil(L / w), bootR = Math.min(rows, Math.ceil(left.boots * N.pair / w));
+        if (rows > N.shoeRowsMax) continue;
+        var sh = Math.max(bootR * N.bootRow + (rows - bootR) * N.shoeRow, N.shoeRowsMax * N.shoeRow);
+        var jIn = jack1 > 0 && sh <= rodTop - N.shortH, jw = jIn ? jack1 : 0;
+        var sw = w - (jw ? jw + N.panel : 0);
+        if (sw < 0 || (jw && sw > 0 && sw < N.stackW)) continue;
+        var lv = Math.max(0, Math.floor((1950 - sh) / N.bagRow));
+        var hs = r.hatLen ? (sw >= N.stackW ? Math.ceil(r.hatLen / sw) : Infinity) : 0;
+        if (hs > lv) continue;
+        var onShelf = Math.min(r.bagLen, (lv - hs) * sw), topCap = (base + (jIn ? 0 : r.jackW) + w) * topLevels;
+        if (r.bagLen - onShelf > topCap) continue;
+        r.shoeW = w; r.shoeRows = rows; r.shoeH = sh; r.accLevels = sw ? lv : 0; r.jackIn = jIn; r.jackInW = jw; r.shelfPartW = sw;
+        r.hatShelves = hs; r.bagShelf = onShelf; r.bagShelves = sw ? Math.ceil(onShelf / sw) : 0; r.accCap = topCap;
+        break;
+      }
+    }
+    if (r.jackIn) { r.jackRods1 = Math.ceil(r.jackLen / r.rodLen || 0); r.jackW = 0; }
+    if (!r.shoeW) r.accCap = (base + r.jackW) * topLevels;
+    r.bagTop = r.bagLen - r.bagShelf;
+    r.topFree = Math.max(0, r.accCap - r.bagTop);
+    r.accW = r.hatShelves + r.bagShelves ? r.shoeW : 0;
+
+    if (r.longW) r.sections.push({ k: "long", w: r.longW });
+    if (r.kidW) r.sections.push({ k: "kid", w: r.kidW });
+    if (r.jackW) r.sections.push({ k: "jack", w: r.jackW });
+    if (r.shortW) r.sections.push({ k: "short", w: r.shortW });
+    if (r.shelfW) r.sections.push({ k: "shelf", w: r.shelfW });
+    if (r.shoeW) r.sections.push({ k: "shoe", w: r.shoeW });
+    r.need = Math.ceil(r.sections.reduce(function (a, s) { return a + s.w; }, 0) + (r.sections.length + 1) * N.panel);
+    return r;
+  }
+
+  function rowsWardrobe(r, c) {
+    var h = [];
+    // Для торцевых штанг: сколько штанг и по сколько отделений.
+    function ends(n, w) { return r.endRod ? "; " + pl(n, "торцевая выдвижная штанга", "торцевые выдвижные штанги", "торцевых выдвижных штанг") + " по " + mm(r.rodLen) + ", отделение " + mm(w) + " шириной на каждую" : ""; }
+    if (r.longW) h.push([r.endRod ? "Торцевые штанги для длинной одежды" : "Штанга для длинной одежды", (c.coats ? pl(c.coats, "пальто", "пальто", "пальто") : "") + (c.coats && c.dress ? " и " : "") + (c.dress ? pl(c.dress, "платье", "платья", "платьев") : "") + ", отделение от " + mm(r.longZone) + " по высоте" + ends(r.longRods, N.endW), r.longW]);
+    if (r.kidW) h.push([r.endRod ? "Торцевые штанги для детских пальто" : "Штанга для детских пальто", pl(r.kidN, "пальто", "пальто", "пальто") + ", отделение 900 мм по высоте" + ends(r.kidRods, N.kidEndW), r.kidW]);
+    var jackWhat = [c.jackets ? pl(c.jackets, "взрослая куртка", "взрослые куртки", "взрослых курток") : "", c.kjackets ? pl(c.kjackets, "детская", "детские", "детских") : ""].filter(Boolean).join(" и ") + ", " + mm(r.jackLen) + " штанги";
+    if (r.jackW) h.push([r.endRod ? "Торцевые штанги для курток" : "Штанги для курток", jackWhat + (r.tiers === 2 ? ", в два яруса по 900 мм: одна штанга выше, другая ниже" : ", в один ярус: на два высоты не хватает") + ends(r.jackRods * r.tiers, N.endW), r.jackW]);
+    if (r.jackIn) h.push([r.endRod ? "Торцевые штанги для курток" : "Штанга для курток", jackWhat + ", в секции с полками над обувью" + ends(r.jackRods1, N.endW), 0]);
+    if (r.shortW) h.push([r.endRod ? "Торцевые штанги для вещей на плечиках" : "Штанга для вещей на плечиках", c.hang + " шт., " + mm(r.hangLen) + " штанги" + (r.tiers === 2 ? ", в два яруса по 900 мм" : ", в один ярус: на два высоты не хватает") + ends(r.shortRods * r.tiers, N.endW), r.shortW]);
+    if (r.shelfW) h.push(["Полки", pl(r.s300 + r.s400, "стопка", "стопки", "стопок") + ", " + pl(r.levels, "полка", "полки", "полок") + " по высоте через 300 мм", r.shelfW]);
+    if (r.linenTop || (c.bedding && r.topVol)) h.push(["Антресоль", [r.linenTop ? "постельное бельё, " + pl(r.linenTop, "стопка", "стопки", "стопок") : "", c.bedding && r.topVol ? "запасные одеяла и подушки" : ""].filter(Boolean).join(", ") + "; над штангой, ширины не добавляет", 0]);
+    var pairs = (c.shoes || 0) + (c.boots || 0) + (c.kshoes || 0);
+    if (pairs > 0) {
+      var where = [];
+      if (r.longW && r.under) where.push("под длинную одежду встанет " + pl(r.under, "пара", "пары", "пар"));
+      if (r.kidW && r.underKid) where.push("под детскую " + pl(r.underKid, "пара", "пары", "пар"));
+      if (r.restPairs) where.push((where.length ? "остальные " : "") + pl(r.restPairs, "пара", "пары", "пар") + " в секцию с полками");
+      h.push(["Обувь", pl(pairs, "пара", "пары", "пар") + (where.length ? ": " + where.join(", ") : ""), 0]);
+    }
+    if (r.shoeW) {
+      var parts = [r.restPairs ? "внизу обувь, " + pl(r.restPairs, "пара", "пары", "пар") + " в " + pl(r.shoeRows, "ряд", "ряда", "рядов") : "внизу место под обувь, " + pl(N.shoeRowsMax, "ряд", "ряда", "рядов")];
+      if (r.jackIn) parts.push("над ней штанга для курток, " + mm(r.jackInW) + " шириной");
+      if (r.accLevels) parts.push((r.jackIn ? "рядом " : "выше ") + pl(r.accLevels, "полка", "полки", "полок") + " через 350 мм" + (r.jackIn ? " шириной " + mm(r.shelfPartW) : "") + ": " + [r.hatShelves ? pl(r.hatShelves, "полка", "полки", "полок") + " под шапки и шарфы на уровне груди" : "", r.bagShelves ? pl(r.bagShelves, "полка", "полки", "полок") + " под сумки" : "", r.accLevels - r.hatShelves - r.bagShelves ? pl(r.accLevels - r.hatShelves - r.bagShelves, "свободная", "свободные", "свободных") : ""].filter(Boolean).join(", "));
+      h.push(["Секция с полками для обуви" + (r.jackIn ? ", курток" : "") + (r.hatShelves ? ", шапок, шарфов" : "") + (r.bagShelves ? " и сумок" : ""), parts.join("; "), r.shoeW]);
+    }
+    h.push(["Стенки и перегородки", (r.sections.length + 1) + " шт. по 16 мм", (r.sections.length + 1) * N.panel]);
+    return h;
+  }
+
+  function checksWardrobe(r, c, type) {
+    var k = [];
+    var hasCoats = (c.coats || 0) + (c.jackets || 0) > 0;
+    if (r.D < N.depthLight) k.push(["warn", "Глубина " + mm(r.D) + ": вешалки поперёк не встанут. Считаю торцевые выдвижные штанги: штанга идёт вглубь шкафа и получается около " + mm(r.rodLen) + " длиной, а отделению под каждую нужна ширина с вешалку, " + mm(N.endW) + " для взрослой одежды и " + mm(N.kidEndW) + " для детской."]);
+    else if (r.D < N.depthGost) k.push(["warn", "Глубина " + mm(r.D) + ": рубашки и лёгкие платья встанут, " + (hasCoats ? "пальто и пуховики будут упираться в двери." : "объёмные вещи будут упираться в двери.") + " Для одежды на плечиках я закладываю от 560 мм."]);
+    else if (hasCoats && r.D < N.depthCoat) k.push(["warn", "Глубина " + mm(r.D) + ": для обычной одежды хватит, но для пуховиков и шуб я закладываю 700 мм."]);
+    else k.push(["ok", "Глубина " + mm(r.D) + " подходит для одежды на плечиках."]);
+    if (r.longW && r.rodTop < r.longZone) k.push(["warn", "При высоте " + mm(r.H) + " длинное отделение " + mm(r.longZone) + " не помещается под штангой."]);
+    k.push(["ok", "Штангу ставьте не выше 1 900 мм от пола. Выше можно только с опускающейся штангой, иначе придётся каждый раз вставать на стремянку или табуретку."]);
+    if (type === "hall") {
+      if (r.hatLen) k.push(["ok", "Шапки и шарфы кладу на полки над обувью, на уровне груди, глубина полки от 240 мм. Шапки по 3 в стопку 120 мм высотой: взрослые 300 × 200 мм, детские 250 × 150 мм; шарфы по 4 в стопку 400 × 350 мм и 200 мм высотой: выше они разваливаются. Им нужно около " + mm(r.hatLen) + " полок."]);
+      if (r.bagLen) k.push(["ok", "Сумкам нужно около " + mm(r.bagLen) + " полок: " + [r.bagShelf ? mm(r.bagShelf) + " на свободных полках над обувью" : "", r.bagTop ? mm(r.bagTop) + " наверху, над штангой" : ""].filter(Boolean).join(", ") + "."]);
+      if (r.topFree >= 500) k.push(["ok", "Над штангой остаётся около " + mm(r.topFree) + " полки: место под чемоданы и вещи не по сезону."]);
+      if (r.shoeW) k.push(["ok", "В секции с полками нижние полки только под обувь, до 3 рядов; сапоги стоят в одном ряду с туфлями, такой ряд от 420 мм высотой." + (r.jackIn ? " Над обувью штанга для курток: под ней нужно 900 мм." : "")]);
+      k.push(["ok", "Отделение для обуви: от 320 мм глубиной, для туфель от 150 мм высотой, для сапог от 400 мм."]);
+    }
+    if (type === "bed") {
+      var m3 = function (v) { return v.toFixed(2).replace(".", ",") + " м³"; }, linen = c.linen || 0;
+      if (r.topVol) {
+        k.push(["ok", "Над штангой остаётся " + mm(r.topH) + " под антресоль. Туда без стремянки не дотянуться, поэтому кладу туда то, чем пользуются не каждый день: постельное бельё, запасные одеяла и подушки."]);
+        if (r.beddingVol > r.topVol) k.push(["warn", "Одеялам и подушкам нужно около " + m3(r.beddingVol) + ", а антресоль даёт " + m3(r.topVol) + ". Постельное бельё уходит на полки, а части одеял найдите место заранее."]);
+        else if (r.linenStacks > r.linenTop) k.push(["warn", "На антресоль помещается " + pl(r.linenTop, "стопка", "стопки", "стопок") + " белья из " + r.linenStacks + ", остальные на полках."]);
+        else if (linen || c.bedding) k.push(["ok", "Всё помещается на антресоль" + (r.linenTop && r.topLevels > 1 ? ". Внутри нужна полка через 300 мм, чтобы стопки белья не ставить друг на друга." : ".")]);
+      } else {
+        if (r.topH > 0) k.push(["warn", "Над штангой остаётся " + mm(r.topH) + ": под антресоль этого мало, постельное бельё уходит на полки."]);
+        if (c.bedding) k.push(["warn", (r.topH > 0 ? "" : "Антресоли нет. ") + "Одеялам и подушкам нужно около " + m3(r.beddingVol) + ", найдите им место заранее."]);
+      }
+      if (linen) k.push(["ok", "Постельное бельё кладу стопками по видам: пододеяльники и простыни по 12 штук, наволочки по 24. Это 130–160 мм в высоту, стопка выше разваливается. " + pl(linen, "комплект", "комплекта", "комплектов") + " дают " + pl(r.linenStacks, "стопку", "стопки", "стопок") + "."]);
+      if (r.s400) k.push(["ok", "Отделение под постельное бельё на полках: 400 мм шириной и 460 мм глубиной или наоборот, смотря как класть стопки."]);
+      k.push(["ok", "Ящики для белья и носков: верх верхнего ящика не выше 1 250 мм от пола."]);
+    }
+    return k;
+  }
+
+  function calc() {
+    var t = T(), P = S.place, c = S.counts, out = { rows: [], checks: [], label: "", have: 0, need: 0 };
+    if (S.type === "hall" || S.type === "bed") {
+      var r = wardrobe(P.W, P.H, P.D, c);
+      out.have = P.W; out.need = r.need; out.rows = rowsWardrobe(r, c); out.checks = checksWardrobe(r, c, S.type);
+      out.scheme = elevation(r, P.W, P.H, "место"); out.haveLabel = "место под шкаф";
+    } else if (S.type === "kitchen") {
+      kitchen(out);
+    }
+    return out;
+  }
+
+  // Ширина варочной панели по числу конфорок, мм.
+  var HOB = { 2: 300, 3: 450, 4: 600 };
+
+  var FUEL = { gas: "газовая", electric: "электрическая", induction: "индукционная" };
+
+  function kitchen(out) {
+    var P = S.place, k = S.kitchen, mods = [];
+    var stove = k.cooker === "stove", mw = k.mw || "none", noTop = k.top === "no";
+    if (noTop && mw === "upper") mw = "counter";
+    var burners = HOB[k.burners] ? k.burners : 4, hobW = stove ? (k.stove === 500 ? 500 : 600) : HOB[burners];
+    var ovenUnder = !stove && k.oven === "under", ovenCol = !stove && k.oven === "column";
+    var cookW = ovenUnder ? Math.max(hobW, 600) : hobW;
+    var hoodW = hobW > 450 ? 600 : 450; // вытяжки беру 450 или 600 мм
+
+    // Нижний ряд слева направо. Между мойкой и плитой стоит посудомойка, без неё модуль с ящиками.
+    if (k.fridge) mods.push({ k: "fridge", name: "Холодильник", w: k.fridge, note: "ширина зависит от объёма, 550–800 мм, глубина около 600 мм" });
+    mods.push({ k: "sink", name: k.sink > 600 ? "Мойка с крылом" : "Мойка", w: k.sink, note: k.sink > 600 ? "чаша и крыло, чтобы поставить посуду" : "нижний модуль " + mm(k.sink) });
+    if (k.dw) mods.push({ k: "dw", name: "Посудомойка", w: k.dw, note: "встраиваемая; над ней свободная столешница между мойкой и плитой" });
+    else mods.push({ k: "drawers", name: "Модуль с ящиками", w: 450, note: "столешница между мойкой и плитой, под ней ящики" });
+    if (stove) mods.push({ k: "stove", name: "Плита", w: hobW, note: "отдельно стоящая, " + FUEL[k.hob] + ", 4 конфорки и духовка" });
+    else mods.push({ k: "cook", name: "Варочная панель" + (ovenUnder ? " и духовка" : ""), w: cookW, note: FUEL[k.hob] + ", " + pl(burners, "конфорка", "конфорки", "конфорок") + ", панель " + mm(hobW) + (cookW > hobW ? ", но под духовку модуль 600 мм" : ovenUnder ? "" : "; под ней ящики") });
+    mods.push({ k: "side", name: "Поверхность у плиты", w: 300, note: "между плитой и стеной или пеналом, не меньше 300 мм" });
+    if (mw === "counter") mods.push({ k: "mwc", name: "Столешница под микроволновку", w: 500, note: "отдельно стоящая СВЧ 450–500 мм шириной, под ней ящики" });
+    if (ovenCol || mw === "column") mods.push({ k: "col", name: "Пенал с " + (ovenCol && mw === "column" ? "духовкой и микроволновкой" : ovenCol ? "духовкой" : "микроволновкой"), w: 600, note: "высокий шкаф 2 050–2 100 мм" });
+
+    var have = P.A, need = mods.reduce(function (a, m) { return a + m.w; }, 0), rest = have - need;
+    out.have = have; out.need = need; out.haveLabel = "длина стены";
+
+    // Хранение раскладываю по уже стоящим модулям, свободный остаток стены тоже идёт под ящики.
+    function has(key) { return mods.some(function (m) { return m.k === key; }); }
+    var spots = [];
+    if (has("drawers")) spots.push("drawers");
+    if (has("cook") && !ovenUnder) spots.push("cook");
+    if (has("mwc")) spots.push("mwc");
+    if (rest >= 300) spots.push("rest");
+    var cutleryAt = spots[0] || "side", potsAt = spots[0] || null;
+    var inside = {}; mods.forEach(function (m) { inside[m.k] = []; }); inside.rest = [];
+    inside[cutleryAt].push("cutlery");
+    if (potsAt) inside[potsAt].push("pans");
+    inside.side.push("tray", "ladle");
+    // Без верхних шкафов посуда и бокалы переезжают в нижние модули, на свободный остаток стены.
+    if (noTop && rest >= 300) inside.rest.push("glass");
+    var what = { cutlery: "ящик для ложек и вилок", pans: "ящики для кастрюль и сковородок", tray: "противни вертикально", ladle: "половники и лопатки в верхнем ящике" };
+    out.rows = mods.map(function (m) {
+      var extra = inside[m.k].map(function (x) { return what[x]; }).join(", ");
+      return [m.name, m.note + (extra ? "; внутри: " + extra : ""), m.w];
+    });
+
+    // Верхний ряд: над мойкой сушилка, над плитой вытяжка, холодильник и пенал в полную высоту,
+    // микроволновка в самом длинном свободном куске, остальное под верхние шкафы.
+    var x = 0, busy = [];
+    mods.forEach(function (m) {
+      if (m.k === "fridge" || m.k === "col") busy.push([x, x + m.w, "tall"]);
+      if (m.k === "sink" && !noTop) busy.push([x, x + m.w, "dryer"]);
+      if (m.k === "cook" || m.k === "stove") { var hx = x + Math.max(0, (m.w - hoodW) / 2); busy.push([hx, hx + hoodW, "hood"]); }
+      x += m.w;
+    });
+    busy.sort(function (a, b) { return a[0] - b[0]; });
+    var free = [], cur = 0;
+    busy.forEach(function (b) { if (b[0] > cur) free.push([cur, Math.min(b[0], have)]); cur = Math.max(cur, b[1]); });
+    if (have > cur) free.push([cur, have]);
+    free = free.filter(function (f) { return f[1] - f[0] > 0; });
+    var upper = busy.filter(function (b) { return b[2] !== "tall"; }).map(function (b) { return [b[0], b[1], b[2]]; });
+    var mwUpper = false;
+    if (mw === "upper") {
+      var big = free.slice().sort(function (a, b) { return (b[1] - b[0]) - (a[1] - a[0]); })[0];
+      if (big && big[1] - big[0] >= 600) { upper.push([big[0], big[0] + 600, "mw"]); big[0] += 600; mwUpper = true; }
+    }
+    var cabW = free.reduce(function (a, f) { return a + Math.max(0, f[1] - f[0]); }, 0);
+    if (!noTop) free.forEach(function (f) { if (f[1] - f[0] > 0) upper.push([f[0], f[1], "cab"]); });
+    var sinkW = k.sink, tallNames = [k.fridge ? "холодильником" : "", ovenCol || mw === "column" ? "пеналом" : ""].filter(Boolean);
+    var hoodRow = ["Вытяжка над " + (stove ? "плитой" : "варочной"), "не уже варочной поверхности, 450 или 600 мм" + (noTop ? "; без верхних шкафов настенная, каминная или наклонная" : ""), hoodW];
+    out.totalLabel = "Итого нижних модулей";
+    if (noTop) { out.upper = [hoodRow]; out.upperLabel = "На стене"; }
+    else {
+      out.upper = [["Шкаф с сушкой над мойкой", "сушилка для посуды встраивается в шкаф над мойкой", sinkW], hoodRow];
+      if (mwUpper) out.upper.push(["Шкаф с микроволновкой", "встраиваемая СВЧ 600 мм шириной", 600]);
+      out.upper.push(["Верхние шкафы для посуды и продуктов", "глубина 300–350 мм" + (tallNames.length ? ", над " + tallNames.join(" и ") + " не считаю: " + (tallNames.length > 1 ? "они" : "он") + " в полную высоту" : ""), cabW]);
+    }
+
+    var gas = k.hob === "gas";
+    out.checks = [];
+    if (rest >= 0) out.checks.push(["ok", "После техники и рабочих зон остаётся " + mm(rest) + " стены под нижние шкафы для посуды и продуктов."]);
+    if (!potsAt) out.checks.push(["warn", "Под кастрюли и сковородки отдельных ящиков не осталось: под варочной стоит духовка, а свободной стены нет. Им нужен модуль с глубокими ящиками."]);
+    if (mw === "upper" && !mwUpper) out.checks.push(["warn", "Для микроволновки в верхнем шкафу нужно 600 мм свободной стены, а столько не осталось."]);
+    if (noTop) {
+      // Нижний модуль вдвое глубже верхнего шкафа, поэтому по объёму его нужно примерно вдвое меньше по длине.
+      var lowEq = up(Math.max(0, cabW - sinkW) / 2, 50);
+      out.checks.push([rest >= 300 ? "ok" : "warn", "Без верхних шкафов посуда, бокалы и продукты переезжают в нижние модули" + (rest >= 300 ? ", под них остаётся " + mm(rest) + " стены" : ", а свободной стены под них не остаётся") + ". Верхние шкафы здесь дали бы около " + mm(cabW - sinkW) + " хранения: нижние вдвое глубже, это примерно " + mm(lowEq) + " нижних модулей. Если места не хватит, часть посуды уберите в пенал."],
+        ["ok", "Сушилку для посуды без верхних шкафов ставят на столешницу у мойки или в нижний модуль рядом с ней."]);
+    }
+    out.checks.push(["ok", "Вытяжка висит " + (gas ? "над газовой плитой не ниже 650 мм" : "над " + (k.hob === "induction" ? "индукционной" : "электрической") + " плитой не ниже 450 мм") + " от варочной поверхности."],
+      ["ok", "Цоколь от 80 мм высотой и утоплен от фасада хотя бы на 50 мм, чтобы не бить ноги."]);
+    if (!noTop) out.checks.push(["ok", "Верхняя полка, до которой тянутся каждый день, не выше 1 900 мм. Выше только для редких вещей."]);
+    out.checks.push(["ok", "Мойку разумно поднять на 100 мм выше плиты: работать надо стоя прямо, а не согнувшись."]);
+    out.sizes = [
+      "<b>Высота столешницы</b> обычно 850–900 мм. Под рост: до 150 см около 760–820 мм, от 160 до 180 см 850–910 мм, выше 180 см около 1 000 мм. Проще всего померить: высота согнутого локтя минус 10–15 см. Нужную высоту добирают цоколем.",
+      noTop ? "" : "<b>От столешницы до верхних шкафов</b> 500–600 мм.",
+      "<b>Глубина</b> нижних модулей и холодильника 600 мм" + (noTop ? "." : ", верхних шкафов 300–350 мм."),
+      "<b>Бокалы для вина</b> 240–270 мм в высоту: полке или ящику под них нужно от 300 мм.",
+      "<b>Кастрюли и сковородки</b> от 140 до 240 мм в диаметре, суповые кастрюли до 280 мм; высота от 90 мм у сковородок до 200 мм у высоких кастрюль. Для них глубокие ящики.",
+      "<b>Противень</b> для духовки 600 мм около 460 × 370 мм. Если хранить вертикально, отделению нужно от 470 мм высоты.",
+      "<b>Ложки и вилки</b> в лотке в верхнем ящике: лотки делают под модули от 300 мм, ящику хватает 50 мм высоты внутри.",
+      "<b>Половники, шумовки, лопатки</b> в верхний ящик рядом с плитой или на рейлинг над ней.",
+      noTop ? "<b>Сушилка для посуды</b> без верхних шкафов встаёт на столешницу у мойки или выдвижной корзиной в нижний модуль." : "<b>Сушилка для посуды</b> встраивается в верхний шкаф над мойкой: под шкафы 400, 450, 500, 600 и 800 мм. Сама она на 30–50 мм уже шкафа и около 250 мм в глубину.",
+      "<b>Микроволновка</b>: встраиваемая обычно 600 мм шириной и 380–450 мм высотой, отдельно стоящая 450–500 мм шириной.",
+      "<b>Отдельно стоящая плита</b> 500 или 600 мм шириной, 600 мм глубиной, 850 мм высотой, вровень со столешницей."
+    ].filter(Boolean);
+    out.scheme = kitchenStrip(mods, have, upper, inside);
+  }
+
+
+  // ---------- Схемы ----------
+  var COL = { long: "#c5d3e1", short: "#e2e9f0", jack: "#d3dde8", shelf: "#f1f0ee", shoe: "#d9c8b6", top: "#ebe6df", kid: "#dbe6d6", acc: "#efe6f0" };
+
+  function elevation(r, have, H, haveWord) {
+    var maxW = Math.max(have, r.need), pad = 6, top = 20, VW = 640, k = (VW - 2 * pad) / maxW, VH = Math.round(H * k) + top + 22;
+    function X(v) { return pad + v * k; } function Y(v) { return top + (H - v) * k; }
+    function rect(x, y, w, h, f, e) { return '<rect x="' + X(x).toFixed(1) + '" y="' + Y(y + h).toFixed(1) + '" width="' + Math.max(0, w * k).toFixed(1) + '" height="' + Math.max(0, h * k).toFixed(1) + '" fill="' + f + '" ' + (e || "") + '/>'; }
+    function rod(x, w, h) { return '<line x1="' + X(x).toFixed(1) + '" x2="' + X(x + w).toFixed(1) + '" y1="' + Y(h).toFixed(1) + '" y2="' + Y(h).toFixed(1) + '" stroke="#2E3222" stroke-width="2"/>'; }
+    var g = [], x = N.panel, rt = r.rodTop, used = {}, has = {};
+    // Иконки в зоне (мм): в ряд, если зона широкая, иначе столбиком; размер по меньшей стороне.
+    function ic(list, x0, w, y0, h, maxS) {
+      list = list.filter(Boolean); if (!list.length) return;
+      var pw = w * k, ph = h * k, n = list.length, row = pw >= ph;
+      var s = Math.min(maxS || 1.8,row ? Math.min((pw - 4) / (n * 24), (ph - 4) / 24) : Math.min((pw - 4) / 24, (ph - 4) / (n * 24)));
+      if (s < 0.4) return;
+      var cx = X(x0 + w / 2), cy = Y(y0 + h / 2), st = 24 * s;
+      list.forEach(function (kd, i) {
+        var off = (i - (n - 1) / 2) * st;
+        g.push(kicon(kd, row ? cx + off : cx, row ? cy : cy + off, s)); used[kd] = true;
+      });
+    }
+    function shoesOf(got) { return [got.boots ? "boot" : "", got.shoes ? "shoe" : "", got.kshoes ? "shoe" : ""].filter(function (v, i, a) { return v && a.indexOf(v) === i; }); }
+    // Торцевые штанги видно с торца: кружок штанги и вещь лицом к зрителю, отделения через пунктир.
+    function endRods(x0, w, n, zoneTop, zoneH, kind) {
+      var cw = w / n;
+      for (var i = 0; i < n; i++) {
+        var cx = x0 + cw * i;
+        if (i) g.push('<line x1="' + X(cx).toFixed(1) + '" x2="' + X(cx).toFixed(1) + '" y1="' + Y(rt).toFixed(1) + '" y2="' + Y(zoneTop).toFixed(1) + '" stroke="#2E3222" stroke-width="1" stroke-dasharray="3 3"/>');
+        g.push('<circle cx="' + X(cx + cw / 2).toFixed(1) + '" cy="' + Y(rt).toFixed(1) + '" r="4" fill="#FFFFFF" stroke="#2E3222" stroke-width="2"/>');
+        ic([kind], cx, cw, zoneTop, zoneH);
+      }
+      used.endrod = true;
+    }
+    if (H > 1950) {
+      g.push(rect(N.panel, 1950, r.need - 2 * N.panel, H - 1950, COL.top));
+      if (S.type === "bed") ic([r.linenTop ? "linen" : "", S.counts.bedding && r.topVol ? "pillow" : ""], N.panel, r.need - 2 * N.panel, 1950, H - 1950, 1.6);
+      if (S.type === "hall") ic([r.bagTop ? "bag" : "", r.topFree >= 500 ? "suitcase" : ""], N.panel, r.need - 2 * N.panel, 1950, H - 1950, 1.6);
+    }
+    r.sections.forEach(function (s) {
+      if (s.k === "long") {
+        g.push(rect(x, rt - r.longZone, s.w, r.longZone, COL.long));
+        var lk = S.type === "hall" ? "coat" : "dress";
+        if (r.endRod) endRods(x, s.w, r.longRods, rt - r.longZone, r.longZone, lk); else { g.push(rod(x, s.w, rt)); ic([lk], x, s.w, rt - r.longZone, r.longZone); }
+        if (r.under) { g.push(rect(x, 0, s.w, r.underH, COL.shoe)); ic(shoesOf(r.u1), x, s.w, 0, r.underH); }
+      } else if (s.k === "kid") {
+        g.push(rect(x, rt - N.kidZone, s.w, N.kidZone, COL.kid));
+        if (r.endRod) endRods(x, s.w, r.kidRods, rt - N.kidZone, N.kidZone, "coat"); else { g.push(rod(x, s.w, rt)); ic(["coat"], x, s.w, rt - N.kidZone, N.kidZone, 0.9); }
+        if (r.underKid) { g.push(rect(x, 0, s.w, r.underKidH, COL.shoe)); ic(shoesOf(r.u2), x, s.w, 0, r.underKidH, 1.3); }
+      } else if (s.k === "short" || s.k === "jack") {
+        // Короткие вещи в два яруса: штанга повыше и штанга пониже.
+        var sc = COL[s.k], si = s.k === "jack" ? "jacket" : "hanger", sr = s.k === "jack" ? r.jackRods : r.shortRods;
+        g.push(rect(x, rt - N.shortH, s.w, N.shortH, sc));
+        if (r.endRod) endRods(x, s.w, sr, rt - N.shortH, N.shortH, si); else { g.push(rod(x, s.w, rt)); ic([si], x, s.w, rt - N.shortH, N.shortH); }
+        if (r.tiers === 2) {
+          var rt2 = rt - N.shortH - 50;
+          g.push(rect(x, rt2 - N.shortH, s.w, N.shortH, sc));
+          if (r.endRod) { var keep = rt; rt = rt2; endRods(x, s.w, sr, rt2 - N.shortH, N.shortH, si); rt = keep; } else { g.push(rod(x, s.w, rt2)); ic([si], x, s.w, rt2 - N.shortH, N.shortH); }
+        }
+      } else if (s.k === "shelf") {
+        for (var i = 0; i < r.levels; i++) { g.push(rect(x, i * N.shelfStep, s.w, N.shelfStep - 20, COL.shelf, 'stroke="#cfc9bf" stroke-width="1"')); ic(["stack"], x, s.w, i * N.shelfStep, N.shelfStep - 20, 0.9); }
+      } else if (s.k === "shoe") {
+        // Внизу обувь. Выше полки: ближайшие к уровню груди под шапки и шарфы, следующие под сумки, остальные свободны.
+        g.push(rect(x, 0, s.w, r.shoeH, COL.shoe, r.restPairs ? "" : 'stroke="#cfc9bf" stroke-width="1" fill-opacity=".45"'));
+        ic(shoesOf(r.left), x, s.w, 0, r.shoeH);
+        // Куртки над обувью слева, полки справа.
+        if (r.jackIn) {
+          g.push(rect(x, rt - N.shortH, r.jackInW, N.shortH, COL.jack)); has.jack = true;
+          if (r.endRod) endRods(x, r.jackInW, r.jackRods1, rt - N.shortH, N.shortH, "jacket"); else { g.push(rod(x, r.jackInW, rt)); ic(["jacket"], x, r.jackInW, rt - N.shortH, N.shortH); }
+        }
+        var px = r.jackIn ? x + r.jackInW + N.panel : x, pw = r.shelfPartW;
+        var hatI = [S.counts.hats || S.counts.khats ? "hat" : "", S.counts.scarves ? "scarf" : ""].filter(Boolean);
+        var lvl = []; for (var j = 0; j < r.accLevels; j++) lvl.push(j);
+        lvl.sort(function (a, b) { return Math.abs(r.shoeH + (a + 0.5) * N.bagRow - N.chest) - Math.abs(r.shoeH + (b + 0.5) * N.bagRow - N.chest); });
+        lvl.forEach(function (j, n) {
+          var y0 = r.shoeH + j * N.bagRow + 20, what = n < r.hatShelves ? hatI[n % hatI.length] : n < r.hatShelves + r.bagShelves ? "bag" : "";
+          g.push(rect(px, y0, pw, N.bagRow - 20, what ? COL.acc : COL.shelf, 'stroke="#cfc9bf" stroke-width="1"'));
+          if (what) { ic([what], px, pw, y0, N.bagRow - 20); has.acc = true; } else has.shelf = true;
+        });
+      }
+      x += s.w + N.panel;
+    });
+    g.push('<rect x="' + X(0) + '" y="' + Y(H) + '" width="' + (r.need * k).toFixed(1) + '" height="' + (H * k).toFixed(1) + '" fill="none" stroke="#2E3222" stroke-width="1.5"/>');
+    var over = r.need > have, col = over ? "#765231" : "#1D4870";
+    g.push('<rect x="' + X(0) + '" y="' + Y(H) + '" width="' + (have * k).toFixed(1) + '" height="' + (H * k).toFixed(1) + '" fill="none" stroke="' + col + '" stroke-width="3" stroke-dasharray="8 5"/>');
+    g.push(label(X(have), 13, haveWord + " " + fmt(have), col, "end"));
+    g.push(label(X(r.need), VH - 4, "нужно " + fmt(r.need), "#2E3222", "end"));
+    r.sections.forEach(function (s) { has[s.k] = true; });
+    var LEG = [["long", "длинная одежда"], ["kid", "детские пальто"], ["jack", "куртки"], ["short", "на плечиках"], ["shelf", "полки"], ["acc", "шапки, шарфы, сумки"]];
+    var leg = '<div class="legend">' + LEG.filter(function (l) { return has[l[0]]; }).map(function (l) { return '<span><i style="background:' + COL[l[0]] + ';border:1px solid #e4e2dd"></i>' + l[1] + '</span>'; }).join("") + ((r.under || r.underKid || r.shoeW) ? '<span><i style="background:' + COL.shoe + '"></i>обувь</span>' : '') + (H > 1950 ? '<span><i style="background:' + COL.top + '"></i>' + (S.type === "hall" ? "полки над штангой" : "антресоль") + '</span>' : '') + '</div>';
+    var INAME = { coat: "пальто", jacket: "куртки", dress: "платья", hanger: "вещи на плечиках", shoe: "обувь", boot: "сапоги", hat: "шапки", scarf: "шарфы", bag: "сумки", stack: "сложенные вещи", linen: "постельное бельё", pillow: "одеяла и подушки", suitcase: "место под чемоданы", endrod: "торцевая выдвижная штанга" };
+    leg += '<div class="legend">' + ["coat", "dress", "jacket", "hanger", "endrod", "stack", "linen", "pillow", "shoe", "boot", "hat", "scarf", "bag", "suitcase"].filter(function (kd) { return used[kd]; }).map(function (kd) {
+      var pic = kd === "endrod" ? '<svg viewBox="0 0 24 24" width="15" height="15" style="vertical-align:-3px;margin-right:4px" aria-hidden="true"><circle cx="12" cy="12" r="5" fill="#FFFFFF" stroke="#2E3222" stroke-width="2.4"/></svg>'
+        : '<svg viewBox="0 0 24 24" width="15" height="15" style="vertical-align:-3px;margin-right:4px" fill="none" stroke="#2E3222" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + KICON[kd] + '</svg>';
+      return '<span>' + pic + INAME[kd] + '</span>';
+    }).join("") + '</div>';
+    return svg(VW, VH, g) + leg;
+  }
+
+  // Кухня: нижний ряд модулей, над ним верхний; холодильник и пенал в полную высоту.
+  var KCOL = { fridge: "#c5d3e1", col: "#c5d3e1", sink: "#e2e9f0", dw: "#f1f0ee", drawers: "#ebe6df", cook: "#d9c8b6", stove: "#d9c8b6", side: "#e7ded2", mwc: "#ebe6df", rest: "#f8f6f2", cab: "#f3efe9", dryer: "#b9cadb", hood: "#a98e72", mw: "#dde3ea" };
+  // Иконки 24×24, рисуются линией.
+  var KICON = {
+    fridge: '<rect x="6" y="2" width="12" height="20" rx="1.5"/><line x1="6" y1="9" x2="18" y2="9"/><line x1="8.5" y1="4.5" x2="8.5" y2="7"/><line x1="8.5" y1="11.5" x2="8.5" y2="15"/>',
+    sink: '<path d="M3 13h18l-2 6H5z"/><path d="M15 13V8a3 3 0 0 0-6 0v1.5"/>',
+    dw: '<rect x="4" y="3" width="16" height="18" rx="1"/><line x1="4" y1="7" x2="20" y2="7"/><circle cx="7" cy="5" r=".5"/><circle cx="9.5" cy="5" r=".5"/><ellipse cx="9" cy="14" rx="1.3" ry="4"/><ellipse cx="13" cy="14" rx="1.3" ry="4"/><ellipse cx="17" cy="14" rx="1" ry="3"/>',
+    pot: '<path d="M5 11h14v6a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3z"/><line x1="3" y1="11" x2="21" y2="11"/><path d="M8 11a4 3 0 0 1 8 0"/><line x1="12" y1="6.5" x2="12" y2="8"/>',
+    stove: '<rect x="4" y="3" width="16" height="18" rx="1"/><circle cx="9" cy="6.5" r="1.7"/><circle cx="15" cy="6.5" r="1.7"/><line x1="4" y1="10" x2="20" y2="10"/><rect x="7" y="12.5" width="10" height="6" rx="1"/>',
+    oven: '<rect x="4" y="4" width="16" height="16" rx="1"/><line x1="4" y1="8" x2="20" y2="8"/><rect x="7" y="10.5" width="10" height="6.5" rx="1"/>',
+    mw: '<rect x="2.5" y="6" width="19" height="12" rx="1.5"/><rect x="5" y="8.5" width="10" height="7" rx="1"/><circle cx="18" cy="10" r=".9"/><line x1="17" y1="14" x2="19" y2="14"/>',
+    hood: '<rect x="9.5" y="2" width="5" height="7"/><path d="M9.5 9h5l6 8H3.5z"/>',
+    dryer: '<line x1="4" y1="19" x2="20" y2="19"/><ellipse cx="8" cy="12.5" rx="1.6" ry="5.5"/><ellipse cx="12" cy="12.5" rx="1.6" ry="5.5"/><ellipse cx="16" cy="12.5" rx="1.6" ry="5.5"/>',
+    drawers: '<rect x="4" y="4" width="16" height="16" rx="1"/><line x1="4" y1="10" x2="20" y2="10"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="7" x2="14" y2="7"/><line x1="10" y1="12.5" x2="14" y2="12.5"/><line x1="10" y1="17.5" x2="14" y2="17.5"/>',
+    cutlery: '<path d="M6 3v5a2 2 0 0 0 4 0V3"/><line x1="8" y1="3" x2="8" y2="21"/><ellipse cx="16" cy="6.5" rx="2.5" ry="3.5"/><line x1="16" y1="10" x2="16" y2="21"/>',
+    pans: '<circle cx="9.5" cy="13" r="6"/><circle cx="9.5" cy="13" r="3.5"/><line x1="15.5" y1="13" x2="22" y2="13"/>',
+    tray: '<rect x="3" y="8" width="18" height="8" rx="1"/><rect x="5.5" y="10" width="13" height="4" rx=".5"/>',
+    ladle: '<path d="M19 3l-8 10"/><path d="M4 13h11a5.5 5.5 0 0 1-11 0z"/>',
+    glass: '<path d="M8 3h8l-.8 5.5a3.2 3.2 0 0 1-6.4 0z"/><line x1="12" y1="12" x2="12" y2="19"/><line x1="9" y1="20" x2="15" y2="20"/>',
+    coat: '<path d="M12 4.5a1.4 1.4 0 1 0-1.4-1.4"/><path d="M9 6l3 1.5L15 6l4 2.5-1.5 3V21h-11V11.5L5 8.5z"/><line x1="12" y1="7.5" x2="12" y2="21"/>',
+    jacket: '<path d="M12 6.5a1.4 1.4 0 1 0-1.4-1.4"/><path d="M9 8l3 1.5L15 8l4 2.5-1.5 2.5V19h-11v-6L5 10.5z"/><line x1="12" y1="9.5" x2="12" y2="19"/>',
+    dress: '<path d="M12 4a1.4 1.4 0 1 0-1.4-1.4"/><path d="M10 5.5h4l-.8 4L18 21H6l4.8-11.5z"/>',
+    hanger: '<path d="M12 7a1.6 1.6 0 1 0-1.6-1.6"/><path d="M12 7l-8.5 6.5h17z"/><path d="M7 13.5v6h10v-6"/>',
+    shoe: '<path d="M3 17v-6l4 .5 2.5-3 2 1v2.5l7 2 2.5 1.5V17z"/><line x1="3" y1="15" x2="21" y2="15"/>',
+    boot: '<path d="M8 3h6v10l5 2 1.5 2v2H8z"/><line x1="8" y1="17" x2="20.5" y2="17"/>',
+    hat: '<path d="M5 15.5a7 7 0 0 1 14 0z"/><rect x="4" y="15.5" width="16" height="3.5" rx="1"/><circle cx="12" cy="7" r="1.6"/>',
+    bag: '<rect x="4" y="9" width="16" height="11" rx="2"/><path d="M9 9V7a3 3 0 0 1 6 0v2"/>',
+    scarf: '<path d="M6 4h12v4.5H6z"/><path d="M9 8.5V20h3.5V8.5"/><line x1="9" y1="17" x2="12.5" y2="17"/>',
+    stack: '<rect x="4" y="5" width="16" height="4" rx="1"/><rect x="4" y="10" width="16" height="4" rx="1"/><rect x="4" y="15" width="16" height="4" rx="1"/>',
+    linen: '<rect x="3" y="6" width="18" height="5.5" rx="1"/><rect x="3" y="12.5" width="18" height="5.5" rx="1"/><line x1="9" y1="6" x2="9" y2="18"/>',
+    suitcase: '<rect x="4" y="7" width="16" height="13" rx="1.5"/><path d="M9.5 7V4.5h5V7"/><line x1="8.5" y1="7" x2="8.5" y2="20"/><line x1="15.5" y1="7" x2="15.5" y2="20"/>',
+    pillow: '<path d="M4 7c3 1.5 13 1.5 16 0-1.5 3.5-1.5 6.5 0 10-3-1.5-13-1.5-16 0 1.5-3.5 1.5-6.5 0-10z"/>',
+    endrod: '<rect x="9" y="2" width="6" height="3"/><circle cx="12" cy="7" r="2"/><path d="M12 9v1"/><path d="M12 10l-6 5h12z"/><path d="M7.5 15v6h9v-6"/>'
+  };
+  var KNAME = { fridge: "холодильник", sink: "мойка", dw: "посудомойка", pot: "варочная панель", stove: "плита", oven: "духовка", mw: "микроволновка", hood: "вытяжка", dryer: "сушилка над мойкой", drawers: "ящики", cutlery: "ложки и вилки", pans: "кастрюли и сковородки", tray: "противни", ladle: "половники и лопатки", glass: "посуда и бокалы" };
+  function kicon(kind, cx, cy, s) {
+    return '<g transform="translate(' + (cx - 12 * s).toFixed(1) + ',' + (cy - 12 * s).toFixed(1) + ') scale(' + s + ')" fill="none" stroke="#2E3222" stroke-width="' + (1.4 / s).toFixed(2) + '" stroke-linecap="round" stroke-linejoin="round">' + KICON[kind] + '</g>';
+  }
+
+  function kitchenStrip(mods, have, upper, inside) {
+    var need = mods.reduce(function (a, m) { return a + m.w; }, 0), maxW = Math.max(have, need);
+    var pad = 6, T = 20, VW = 640, k = (VW - 2 * pad) / maxW, upH = 60, gap = 36, lowH = 120, yLow = T + upH + gap, VH = yLow + lowH + 24, g = [], used = {};
+    function box(x0, y, w, h, f, line) { return '<rect x="' + (pad + x0 * k).toFixed(1) + '" y="' + y + '" width="' + (w * k).toFixed(1) + '" height="' + h + '" fill="' + f + '" ' + (line ? 'stroke="#cfc9bf" stroke-width="1"' : 'stroke="#FFFFFF" stroke-width="2"') + '/>'; }
+    function num(x0, w, y) { var cx = pad + (x0 + w / 2) * k; return w * k > 26 ? '<text x="' + cx.toFixed(1) + '" y="' + y + '" font-size="10.5" text-anchor="middle" fill="#2E3222" font-family="Montserrat, sans-serif">' + fmt(w) + '</text>' : ''; }
+    // Иконки столбиком по центру блока; в узком блоке мельче.
+    function icons(list, x0, w, y, h) {
+      var px = w * k, s = Math.min(1, (px - 6) / 24, (h - 18) / (list.length * 24)), cx = pad + (x0 + w / 2) * k;
+      if (s < 0.45) return;
+      var step = 24 * s, top = y + (h - 14 - step * list.length) / 2 + step / 2;
+      list.forEach(function (kind, i) { g.push(kicon(kind, cx, top + i * step, s)); used[kind] = true; });
+    }
+    var MAIN = { fridge: ["fridge"], col: [], sink: ["sink"], dw: ["dw"], drawers: ["drawers"], cook: ["pot"], stove: ["stove"], side: [], mwc: ["mw"], rest: ["drawers"] };
+    var ovenUnder = S.kitchen.cooker !== "stove" && S.kitchen.oven === "under";
+    var x = 0;
+    mods.forEach(function (m) {
+      var list = MAIN[m.k].slice();
+      if (m.k === "cook" && ovenUnder) list.push("oven");
+      if (m.k === "col") { if (S.kitchen.mw === "column") list.push("mw"); if (S.kitchen.cooker !== "stove" && S.kitchen.oven === "column") list.push("oven"); }
+      list = list.concat(inside[m.k] || []);
+      if (m.k === "fridge" || m.k === "col") { g.push(box(x, T, m.w, yLow + lowH - T, KCOL[m.k])); icons(list, x, m.w, T, yLow + lowH - T); }
+      else { g.push(box(x, yLow, m.w, lowH, KCOL[m.k])); icons(list, x, m.w, yLow, lowH); }
+      g.push(num(x, m.w, yLow + lowH - 5));
+      x += m.w;
+    });
+    if (have - need >= 150) {
+      g.push(box(need, yLow, have - need, lowH, KCOL.rest, true));
+      icons(["drawers"].concat(inside.rest || []), need, have - need, yLow, lowH);
+      g.push(num(need, have - need, yLow + lowH - 5));
+    }
+    var firstCab = true;
+    upper.sort(function (a, b) { return a[0] - b[0]; }).forEach(function (u) {
+      var w = u[1] - u[0];
+      g.push(box(u[0], T, w, upH, KCOL[u[2]], true));
+      var list = u[2] === "cab" ? (firstCab && w >= 300 ? ["glass"] : []) : [u[2]];
+      if (u[2] === "cab" && w >= 300) firstCab = false;
+      icons(list, u[0], w, T, upH);
+      g.push(num(u[0], w, T + upH - 5));
+    });
+    var over = need > have, col = over ? "#765231" : "#1D4870";
+    g.push('<rect x="' + pad + '" y="' + T + '" width="' + (have * k).toFixed(1) + '" height="' + (yLow + lowH - T) + '" fill="none" stroke="' + col + '" stroke-width="3" stroke-dasharray="8 5"/>');
+    g.push(label(pad + have * k, 13, "стена " + fmt(have), col, "end"));
+    g.push(label(pad + need * k, VH - 4, "нужно " + fmt(need), "#2E3222", "end"));
+    var order = ["fridge", "sink", "dryer", "dw", "pot", "stove", "oven", "hood", "mw", "drawers", "cutlery", "pans", "tray", "ladle", "glass"];
+    var leg = '<div class="legend">' + order.filter(function (kd) { return used[kd]; }).map(function (kd) {
+      return '<span><svg viewBox="0 0 24 24" width="15" height="15" style="vertical-align:-3px;margin-right:4px" fill="none" stroke="#2E3222" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + KICON[kd] + '</svg>' + KNAME[kd] + '</span>';
+    }).join("") + '</div>';
+    return svg(VW, VH, g) + leg;
+  }
+  function label(x, y, t, c, a) { return '<text x="' + x.toFixed(1) + '" y="' + y + '" font-size="12" text-anchor="' + a + '" fill="' + c + '" font-family="Montserrat, sans-serif">' + t + '</text>'; }
+  function svg(w, h, g) { return '<svg class="scheme" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="Схема: сколько нужно по нормам и сколько есть места">' + g.join("") + '</svg>'; }
+
+  // ---------- Тексты по типу ----------
+  var NOT_YET = {
+    hall: "Это ещё не ваша прихожая, а примерное количество штанг и полок, которое понадобится, чтобы уместить всю верхнюю одежду и обувь.",
+    bed: "Это ещё не ваш шкаф, а примерное количество штанг и полок, которое понадобится, чтобы уместить все ваши вещи.",
+    kitchen: "Это ещё не ваша кухня, а примерная длина нижних и верхних модулей, которая понадобится, чтобы уместить технику, мойку и рабочую зону."
+  };
+
+  var WARDROBE_INTRO = "Он считает по нормативам и не знает особенностей вашей квартиры. А чаще всего именно в них и заключается сложность расчёта и конструирования мебели:";
+  var UNSEEN = {
+    hall: { intro: WARDROBE_INTRO, list: ["стены и углы в квартире не идеально ровные;", "в зону шкафа попадают плинтусы, карнизы, батареи, розетки и выключатели;", "распашные двери или ящики упираются в дверь соседней комнаты, откосы или входную дверь;", "ваши вещи висят и лежат не так, как у среднестатистического человека из нормативов."] },
+    bed: { intro: WARDROBE_INTRO, list: ["стены и углы в квартире не идеально ровные;", "в зону шкафа попадают плинтусы, карнизы, батареи, розетки и выключатели;", "распашные двери или ящики упираются в кровать, дверь комнаты или откосы;", "ваши вещи висят и лежат не так, как у среднестатистического человека из нормативов."] },
+    kitchen: { intro: "Обратите внимание: эти расчёты приблизительные и основаны только на стандартных размерах посуды и бытовой техники. Калькулятор не может учесть особенности вашей квартиры:", list: ["где выведены вода, канализация и розетки;", "есть ли короба, трубы, батареи, окна;", "куда открываются дверцы холодильника, духовки и посудомойки и не упираются ли в соседние фасады;", "ваш рост: от него зависит высота столешницы и верхних шкафов."] }
+  };
+
+  // ---------- Отрисовка ----------
+  function render() {
+    if (!S.type) return;
+    var o = calc(), d = o.have - o.need, h = "";
+    if (d < 0) h += '<p class="verdict bad">Не хватает ' + mm(-d) + '</p>';
+    else h += '<p class="verdict good">Помещается, запас ' + mm(d) + '</p>';
+    h += '<p class="sub">По нормам нужно от ' + mm(o.need) + ', ' + o.haveLabel + ' ' + mm(o.have) + '.</p>';
+    h += o.scheme;
+    if (o.note) h += '<p class="note">' + o.note + '</p>';
+    function row(r) { return '<tr><td>' + r[0] + (r[1] ? '<small>' + r[1] + '</small>' : '') + '</td><td class="n">' + (r[2] ? mm(r[2]) : "—") + '</td></tr>'; }
+    h += '<table>';
+    if (o.upper) h += '<tr class="head"><td colspan="2">Нижние модули</td></tr>';
+    o.rows.forEach(function (r) { h += row(r); });
+    h += '<tr class="total"><td>' + (o.totalLabel || "Итого по нормам") + '</td><td class="n">' + mm(o.need) + '</td></tr>';
+    if (o.upper) { h += '<tr class="head"><td colspan="2">' + (o.upperLabel || "Верхние модули") + '</td></tr>'; o.upper.forEach(function (r) { h += row(r); }); }
+    h += '</table>';
+    h += '<h3>Что проверить в проекте</h3><ul class="checks">';
+    o.checks.forEach(function (c) { h += '<li class="' + c[0] + '">' + c[1] + '</li>'; });
+    h += '</ul>';
+    if (o.sizes) h += '<h3>Размеры, которые стоит заложить</h3><ul class="sizes">' + o.sizes.map(function (x) { return '<li>' + x + '</li>'; }).join("") + '</ul>';
+    document.getElementById("result").innerHTML = h;
+    document.getElementById("gate").classList.toggle("hidden", OPEN);
+    document.getElementById("sent").classList.toggle("hidden", !OPEN);
+    store("calcState", JSON.stringify(S));
+
+    var un = UNSEEN[S.type] || UNSEEN.bed;
+    document.getElementById("notYet").textContent = S.type === "kitchen" && S.kitchen.top === "no" ? NOT_YET.kitchen.replace("нижних и верхних", "нижних") : NOT_YET[S.type] || NOT_YET.bed;
+    document.getElementById("unseenIntro").textContent = un.intro;
+    document.getElementById("unseen").innerHTML = un.list.map(function (x) { return "<li>" + x + "</li>"; }).join("");
+    LAST = summary(o, d);
+  }
+
+  // ---------- Итог для заявки и ссылка на расчёт ----------
+  function plain(s) { return String(s).replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim(); }
+  function b64(s) { return btoa(unescape(encodeURIComponent(s))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+  function unb64(s) { s = s.replace(/-/g, "+").replace(/_/g, "/"); while (s.length % 4) s += "="; return decodeURIComponent(escape(atob(s))); }
+  function shareLink() { return location.origin + location.pathname + "#r=1." + b64(JSON.stringify(S)); }
+  function summary(o, d) {
+    var L = [T().name], place = [];
+    document.querySelectorAll("#place input[data-p]").forEach(function (i) { place.push(plain(i.parentNode.firstChild.textContent) + " " + fmt(parseFloat(i.value)) + " мм"); });
+    if (place.length) L.push("Место: " + place.join(", "));
+    if (T().items) L.push("Живут: взрослых " + S.adults + ", детей " + S.kids);
+    if (S.type === "kitchen") {
+      var kk = S.kitchen;
+      L.push("Плита: " + (kk.cooker === "stove" ? "отдельно стоящая " + fmt(kk.stove === 500 ? 500 : 600) + " мм" : "варочная панель, " + pl(HOB[kk.burners] ? kk.burners : 4, "конфорка", "конфорки", "конфорок")) + ", " + FUEL[kk.hob]);
+      L.push("Верхние шкафы: " + (kk.top === "no" ? "нет" : "есть"));
+      L.push("Микроволновка: " + ({ upper: "в верхнем шкафу", counter: "на столешнице", column: "в пенале", none: "нет" })[kk.mw || "none"]);
+    }
+    if (o.upper) L.push("Нижние модули:");
+    o.rows.forEach(function (r) { L.push("• " + plain(r[0]) + (r[1] && S.type !== "kitchen" ? " (" + plain(r[1]) + ")" : "") + (r[2] ? ": " + fmt(r[2]) + " мм" : "")); });
+    if (o.upper) { L.push((o.upperLabel || "Верхние модули") + ":"); o.upper.forEach(function (r) { L.push("• " + plain(r[0]) + ": " + fmt(r[2]) + " мм"); }); }
+    L.push((o.totalLabel || "Итого по нормам") + " " + fmt(o.need) + " мм; " + o.haveLabel + " " + fmt(o.have) + " мм; " + (d < 0 ? "не хватает " + fmt(-d) : "запас " + fmt(d)) + " мм");
+    if (o.checks && o.checks.length) { L.push("Что проверить в проекте:"); o.checks.forEach(function (c) { L.push("• " + plain(c[1])); }); }
+    if (o.sizes && o.sizes.length) { L.push("Размеры, которые стоит заложить:"); o.sizes.forEach(function (x) { L.push("• " + plain(x)); }); }
+    L.push("Ссылка на расчёт: " + shareLink());
+    return L.join("\n").replace(/ /g, " ");
+  }
+  function readLink() {
+    var m = /^#r=1\.([A-Za-z0-9_-]+)$/.exec(location.hash || "");
+    if (!m) return null;
+    try { return JSON.parse(unb64(m[1])); } catch (e) { return null; }
+  }
+
+  // ---------- Заявка в Яндекс Форму ----------
+  // Адрес формы и идентификаторы скрытых вопросов берутся из Яндекс Формы Ники (см. вики, nika-lead-magnet-plan).
+  // Имя, телефон, ник и обе галочки согласий заполняются в самой форме, сюда приходят только расчёт и площадка.
+  var YAFORM = { url: "https://forms.yandex.ru/u/6adbb08f9b79a59a86ff6573/", calc: "calc", source: "source" };
+  var LAST = "";
+  function source() {
+    var s = ""; try { s = new URLSearchParams(location.search).get("src") || ""; } catch (e) {}
+    var names = { tg: "Telegram-канал", ig: "Instagram: ManyChat", "ig-stories": "Instagram: сториз", "ig-bio": "Instagram: шапка профиля" };
+    return names[s] || s || "прямая ссылка";
+  }
+  var msgEl = document.getElementById("formmsg"), box = document.getElementById("yaform");
+  // Расчёт уходит в функцию бота (бакет в Yandex Cloud), та отдаёт короткий код, и открывается бот: t.me/бот?start=код.
+  var BOT = { api: "https://functions.yandexcloud.net/d4e8c15gspv2q1nhjvqg", user: "cherednikova_design_bot" };
+  document.getElementById("leadBtn").addEventListener("click", function () {
+    var btn = this;
+    btn.disabled = true;
+    msgEl.textContent = "Готовлю расчёт…";
+    fetch(BOT.api, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ calc: LAST, source: source() }) })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (d) { btn.disabled = false; msgEl.textContent = ""; location.href = "https://t.me/" + BOT.user + "?start=" + encodeURIComponent(d.code); })
+      .catch(function () { btn.disabled = false; msgEl.textContent = "Не получилось подготовить расчёт. Попробуйте ещё раз или оставьте заявку через форму."; });
+  });
+  // Запасной путь для тех, у кого нет Telegram.
+  document.getElementById("formLink").addEventListener("click", function (e) {
+    e.preventDefault();
+    if (!YAFORM.url) { msgEl.textContent = "Форма пока не подключена."; return; }
+    var q = new URLSearchParams();
+    q.set("iframe", "1");
+    q.set(YAFORM.calc, LAST);
+    q.set(YAFORM.source, source());
+    box.innerHTML = '<iframe title="Заявка на просчёт" loading="lazy" src="' + YAFORM.url.replace(/\/?$/, "/") + "?" + q.toString().replace(/&/g, "&amp;") + '"></iframe>';
+    msgEl.textContent = "";
+  });
+
+  window.__calcOpen = function () {
+    OPEN = true; store("calcOpen", "1"); box.innerHTML = "";
+    render(); document.getElementById("after").scrollIntoView({ behavior: "smooth" });
+  };
+
+  // Вернулись после формы на основной странице: восстанавливаем введённое.
+  var saved = null; try { saved = JSON.parse(load("calcState") || "null"); } catch (e) {}
+  var fromLink = readLink(); if (fromLink) saved = fromLink;
+  if (saved && saved.type && TYPES.some(function (t) { return t.id === saved.type; })) {
+    S = saved;
+    typesBox.querySelectorAll(".type").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.id === S.type ? "true" : "false"); });
+    document.getElementById("work").classList.remove("hidden");
+    buildPlace(); buildPeople(); buildItems(); render();
+    if (OK) document.getElementById("result").scrollIntoView();
+  }
+  if (OK) { try { history.replaceState(null, "", location.pathname); } catch (e) {} }
+})();
+</script>
+</body>
+</html>
