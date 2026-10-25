@@ -195,6 +195,7 @@
     hanger: 75, coat: 80, dress: 50,
     depthGost: 560, depthCoat: 700, depthLight: 500,
     pair: 250, shoeRow: 170, bootRow: 420, shoeRowsMax: 3, // в секции с полками обувь не выше 3 рядов
+    hangerW: 450, kidHangerW: 350, // самое узкое отделение под штангу: одна вешалка
     chest: 1300, // уровень груди: сюда шапки и шарфы
     stackW: 300, linenW: 400, stackH: 250, shelfStep: 300,
     thin: 12, thick: 60, towel: 60, bedding: 0.11, hat: 300, hatShelf: 170, topMin: 200, // антресоль ниже 200 мм не считаю
@@ -431,6 +432,12 @@
       r.rodLen = Math.max(150, D - 50);
       r.longRods = Math.ceil(r.longW / r.rodLen); r.kidRods = Math.ceil(r.kidW / r.rodLen); r.shortRods = Math.ceil(r.shortW / r.rodLen); r.jackRods = Math.ceil(r.jackW / r.rodLen);
       r.longW = r.longRods * N.endW; r.kidW = r.kidRods * N.kidEndW; r.shortW = r.shortRods * N.endW; r.jackW = r.jackRods * N.endW;
+    } else {
+      // Отделение не уже одной вешалки, даже если вещей мало.
+      if (r.longW) r.longW = Math.max(r.longW, N.hangerW);
+      if (r.kidW) r.kidW = Math.max(r.kidW, N.kidHangerW);
+      if (r.shortW) r.shortW = Math.max(r.shortW, N.hangerW);
+      if (r.jackW) r.jackW = Math.max(r.jackW, N.hangerW);
     }
 
     // Обувь: сначала под одеждой на штангах, остальное в отдельную секцию.
@@ -484,7 +491,7 @@
     var base = r.longW + r.kidW + r.shortW + r.shelfW;
     var topLevels = r.topH >= N.bagRow ? Math.floor(r.topH / N.bagRow) : 0;
     // Куртки в один ярус над обувью: ширина штанги, а при мелком шкафу — торцевые штанги.
-    var jack1 = r.jackLen ? (r.endRod ? Math.ceil(r.jackLen / r.rodLen) * N.endW : Math.ceil(r.jackLen)) : 0;
+    var jack1 = r.jackLen ? (r.endRod ? Math.ceil(r.jackLen / r.rodLen) * N.endW : Math.max(N.hangerW, Math.ceil(r.jackLen))) : 0;
 
     // Секция с полками. Внизу только обувь, не больше 3 рядов: туфли, детская обувь и сапоги в одних рядах,
     // ряд с сапогами высокий. Над обувью слева штанга для курток, если хватает высоты, справа полки через 350 мм:
