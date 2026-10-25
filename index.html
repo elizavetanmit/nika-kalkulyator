@@ -476,36 +476,45 @@
     r.s400 = r.linenStacks - r.linenTop;
     r.shelfW = shelfOf(r.s300, r.s400);
 
-    // Шапки и шарфы на полках над обувью, на уровне груди. Сумки наверх, над штангу: там же место под чемоданы.
     // Стопку кладу длинной стороной вглубь, если полка позволяет: так она занимает меньше ширины.
     function along(st) { return D >= st[0] ? st[1] : st[0]; }
     r.hatLen = Math.ceil((c.hats || 0) / N.hatPer) * along(N.hatStack) + Math.ceil((c.khats || 0) / N.hatPer) * along(N.kidHatStack) + Math.ceil((c.scarves || 0) / N.scarfPer) * along(N.scarfStack);
     r.bagLen = (c.bags || 0) * N.bag;
     r.accLen = r.hatLen + r.bagLen;
-    var base = r.longW + r.kidW + r.jackW + r.shortW + r.shelfW;
+    var base = r.longW + r.kidW + r.shortW + r.shelfW;
     var topLevels = r.topH >= N.bagRow ? Math.floor(r.topH / N.bagRow) : 0;
+    // Куртки в один ярус над обувью: ширина штанги, а при мелком шкафу — торцевые штанги.
+    var jack1 = r.jackLen ? (r.endRod ? Math.ceil(r.jackLen / r.rodLen) * N.endW : Math.ceil(r.jackLen)) : 0;
 
-    // Секция с полками: внизу только обувь, не больше 3 рядов; выше, до 1 950 мм, полки через 350 мм
-    // под шапки и шарфы, и под сумки, если наверху им не хватило места. Ширину беру самую узкую, где всё встаёт.
-    r.shoeRows = 0; r.shoeH = 0; r.accLevels = 0;
-    if (r.restPairs > 0 || r.hatLen > 0 || r.bagLen > base * topLevels) {
+    // Секция с полками. Внизу только обувь, не больше 3 рядов: туфли, детская обувь и сапоги в одних рядах,
+    // ряд с сапогами высокий. Над обувью слева штанга для курток, если хватает высоты, справа полки через 350 мм:
+    // ближе к уровню груди шапки и шарфы, на свободных полках сумки. Что из сумок не встало — наверх, над штангу;
+    // остаток наверху под чемоданы. Ширину беру самую узкую, где всё встаёт.
+    r.shoeRows = 0; r.shoeH = 0; r.accLevels = 0; r.jackIn = false; r.jackInW = 0; r.shelfPartW = 0;
+    r.hatShelves = 0; r.bagShelves = 0; r.bagShelf = 0;
+    if (r.restPairs > 0 || r.hatLen > 0 || r.bagLen > (base + r.jackW) * topLevels) {
+      var L = left.shoes * N.pair + left.kshoes * N.kidPair + left.boots * N.pair;
       for (var w = 300; w <= 6000; w += 50) {
-        // Туфли и детская обувь делят ряды, сапогам нужны свои высокие ряды.
-        var lowR = Math.ceil((left.shoes * N.pair + left.kshoes * N.kidPair) / w), bootR = Math.ceil(left.boots * N.pair / w);
-        var rows = lowR + bootR, hh = lowR * N.shoeRow + bootR * N.bootRow;
+        var rows = Math.ceil(L / w), bootR = Math.min(rows, Math.ceil(left.boots * N.pair / w));
         if (rows > N.shoeRowsMax) continue;
-        var sh = Math.max(hh, N.shoeRowsMax * N.shoeRow), lv = Math.max(0, Math.floor((1950 - sh) / N.bagRow));
-        r.shoeW = w; r.shoeRows = rows; r.shoeH = sh; r.accLevels = lv;
-        if (r.hatLen + Math.max(0, r.bagLen - (base + w) * topLevels) <= w * lv) break;
+        var sh = Math.max(bootR * N.bootRow + (rows - bootR) * N.shoeRow, N.shoeRowsMax * N.shoeRow);
+        var jIn = jack1 > 0 && sh <= rodTop - N.shortH, jw = jIn ? jack1 : 0;
+        var sw = w - (jw ? jw + N.panel : 0);
+        if (sw < 0 || (jw && sw > 0 && sw < N.stackW)) continue;
+        var lv = Math.max(0, Math.floor((1950 - sh) / N.bagRow));
+        var hs = r.hatLen ? (sw >= N.stackW ? Math.ceil(r.hatLen / sw) : Infinity) : 0;
+        if (hs > lv) continue;
+        var onShelf = Math.min(r.bagLen, (lv - hs) * sw), topCap = (base + (jIn ? 0 : r.jackW) + w) * topLevels;
+        if (r.bagLen - onShelf > topCap) continue;
+        r.shoeW = w; r.shoeRows = rows; r.shoeH = sh; r.accLevels = sw ? lv : 0; r.jackIn = jIn; r.jackInW = jw; r.shelfPartW = sw;
+        r.hatShelves = hs; r.bagShelf = onShelf; r.bagShelves = sw ? Math.ceil(onShelf / sw) : 0; r.accCap = topCap;
+        break;
       }
     }
-    r.accCap = (base + r.shoeW) * topLevels;
-    r.bagTop = Math.min(r.bagLen, r.accCap);
-    r.bagOver = r.bagLen - r.bagTop;
-    r.topFree = r.accCap - r.bagTop;
-    // Сколько полок над обувью занято: шапки и шарфы, потом сумки, что не встали наверх.
-    r.hatShelves = r.shoeW ? Math.min(r.accLevels, Math.ceil(r.hatLen / r.shoeW)) : 0;
-    r.bagShelves = r.shoeW ? Math.min(r.accLevels - r.hatShelves, Math.ceil(r.bagOver / r.shoeW)) : 0;
+    if (r.jackIn) { r.jackRods1 = Math.ceil(r.jackLen / r.rodLen || 0); r.jackW = 0; }
+    if (!r.shoeW) r.accCap = (base + r.jackW) * topLevels;
+    r.bagTop = r.bagLen - r.bagShelf;
+    r.topFree = Math.max(0, r.accCap - r.bagTop);
     r.accW = r.hatShelves + r.bagShelves ? r.shoeW : 0;
 
     if (r.longW) r.sections.push({ k: "long", w: r.longW });
@@ -524,7 +533,9 @@
     function ends(n, w) { return r.endRod ? "; " + pl(n, "торцевая выдвижная штанга", "торцевые выдвижные штанги", "торцевых выдвижных штанг") + " по " + mm(r.rodLen) + ", отделение " + mm(w) + " шириной на каждую" : ""; }
     if (r.longW) h.push([r.endRod ? "Торцевые штанги для длинной одежды" : "Штанга для длинной одежды", (c.coats ? pl(c.coats, "пальто", "пальто", "пальто") : "") + (c.coats && c.dress ? " и " : "") + (c.dress ? pl(c.dress, "платье", "платья", "платьев") : "") + ", отделение от " + mm(r.longZone) + " по высоте" + ends(r.longRods, N.endW), r.longW]);
     if (r.kidW) h.push([r.endRod ? "Торцевые штанги для детских пальто" : "Штанга для детских пальто", pl(r.kidN, "пальто", "пальто", "пальто") + ", отделение 900 мм по высоте" + ends(r.kidRods, N.kidEndW), r.kidW]);
-    if (r.jackW) h.push([r.endRod ? "Торцевые штанги для курток" : "Штанги для курток", [c.jackets ? pl(c.jackets, "взрослая куртка", "взрослые куртки", "взрослых курток") : "", c.kjackets ? pl(c.kjackets, "детская", "детские", "детских") : ""].filter(Boolean).join(" и ") + ", " + mm(r.jackLen) + " штанги" + (r.tiers === 2 ? ", в два яруса по 900 мм: одна штанга выше, другая ниже" : ", в один ярус: на два высоты не хватает") + ends(r.jackRods * r.tiers, N.endW), r.jackW]);
+    var jackWhat = [c.jackets ? pl(c.jackets, "взрослая куртка", "взрослые куртки", "взрослых курток") : "", c.kjackets ? pl(c.kjackets, "детская", "детские", "детских") : ""].filter(Boolean).join(" и ") + ", " + mm(r.jackLen) + " штанги";
+    if (r.jackW) h.push([r.endRod ? "Торцевые штанги для курток" : "Штанги для курток", jackWhat + (r.tiers === 2 ? ", в два яруса по 900 мм: одна штанга выше, другая ниже" : ", в один ярус: на два высоты не хватает") + ends(r.jackRods * r.tiers, N.endW), r.jackW]);
+    if (r.jackIn) h.push([r.endRod ? "Торцевые штанги для курток" : "Штанга для курток", jackWhat + ", в секции с полками над обувью" + ends(r.jackRods1, N.endW), 0]);
     if (r.shortW) h.push([r.endRod ? "Торцевые штанги для вещей на плечиках" : "Штанга для вещей на плечиках", c.hang + " шт., " + mm(r.hangLen) + " штанги" + (r.tiers === 2 ? ", в два яруса по 900 мм" : ", в один ярус: на два высоты не хватает") + ends(r.shortRods * r.tiers, N.endW), r.shortW]);
     if (r.shelfW) h.push(["Полки", pl(r.s300 + r.s400, "стопка", "стопки", "стопок") + ", " + pl(r.levels, "полка", "полки", "полок") + " по высоте через 300 мм", r.shelfW]);
     if (r.linenTop || (c.bedding && r.topVol)) h.push(["Антресоль", [r.linenTop ? "постельное бельё, " + pl(r.linenTop, "стопка", "стопки", "стопок") : "", c.bedding && r.topVol ? "запасные одеяла и подушки" : ""].filter(Boolean).join(", ") + "; над штангой, ширины не добавляет", 0]);
@@ -538,8 +549,9 @@
     }
     if (r.shoeW) {
       var parts = [r.restPairs ? "внизу обувь, " + pl(r.restPairs, "пара", "пары", "пар") + " в " + pl(r.shoeRows, "ряд", "ряда", "рядов") : "внизу место под обувь, " + pl(N.shoeRowsMax, "ряд", "ряда", "рядов")];
-      if (r.accLevels) parts.push("выше " + pl(r.accLevels, "полка", "полки", "полок") + " через 350 мм: " + [r.hatShelves ? pl(r.hatShelves, "полка", "полки", "полок") + " под шапки и шарфы на уровне груди" : "", r.bagShelves ? pl(r.bagShelves, "полка", "полки", "полок") + " под сумки, что не встали наверх" : "", r.accLevels - r.hatShelves - r.bagShelves ? pl(r.accLevels - r.hatShelves - r.bagShelves, "свободная", "свободные", "свободных") : ""].filter(Boolean).join(", "));
-      h.push(["Секция с полками для обуви" + (r.hatShelves && r.bagShelves ? ", шапок, шарфов и сумок" : r.hatShelves ? ", шапок и шарфов" : r.bagShelves ? " и сумок" : ""), parts.join("; "), r.shoeW]);
+      if (r.jackIn) parts.push("над ней штанга для курток, " + mm(r.jackInW) + " шириной");
+      if (r.accLevels) parts.push((r.jackIn ? "рядом " : "выше ") + pl(r.accLevels, "полка", "полки", "полок") + " через 350 мм" + (r.jackIn ? " шириной " + mm(r.shelfPartW) : "") + ": " + [r.hatShelves ? pl(r.hatShelves, "полка", "полки", "полок") + " под шапки и шарфы на уровне груди" : "", r.bagShelves ? pl(r.bagShelves, "полка", "полки", "полок") + " под сумки" : "", r.accLevels - r.hatShelves - r.bagShelves ? pl(r.accLevels - r.hatShelves - r.bagShelves, "свободная", "свободные", "свободных") : ""].filter(Boolean).join(", "));
+      h.push(["Секция с полками для обуви" + (r.jackIn ? ", курток" : "") + (r.hatShelves ? ", шапок, шарфов" : "") + (r.bagShelves ? " и сумок" : ""), parts.join("; "), r.shoeW]);
     }
     h.push(["Стенки и перегородки", (r.sections.length + 1) + " шт. по 16 мм", (r.sections.length + 1) * N.panel]);
     return h;
@@ -556,12 +568,9 @@
     k.push(["ok", "Штангу ставьте не выше 1 900 мм от пола. Выше можно только с опускающейся штангой, иначе придётся каждый раз вставать на стремянку или табуретку."]);
     if (type === "hall") {
       if (r.hatLen) k.push(["ok", "Шапки и шарфы кладу на полки над обувью, на уровне груди, глубина полки от 240 мм. Шапки по 3 в стопку 120 мм высотой: взрослые 300 × 200 мм, детские 250 × 150 мм; шарфы по 4 в стопку 400 × 350 мм и 200 мм высотой: выше они разваливаются. Им нужно около " + mm(r.hatLen) + " полок."]);
-      if (r.bagLen) {
-        if (!r.accCap) k.push(["warn", "Над штангой нет места под полку для сумок: ей нужно от 350 мм по высоте. Сумки уходят на полки над обувью."]);
-        else k.push([r.bagOver ? "warn" : "ok", "Сумки кладу наверх, на полку над штангой: им нужно около " + mm(r.bagLen) + ", там есть " + mm(r.accCap) + (r.bagOver ? ", остальные на полки над обувью." : ".")]);
-      }
+      if (r.bagLen) k.push(["ok", "Сумкам нужно около " + mm(r.bagLen) + " полок: " + [r.bagShelf ? mm(r.bagShelf) + " на свободных полках над обувью" : "", r.bagTop ? mm(r.bagTop) + " наверху, над штангой" : ""].filter(Boolean).join(", ") + "."]);
       if (r.topFree >= 500) k.push(["ok", "Над штангой остаётся около " + mm(r.topFree) + " полки: место под чемоданы и вещи не по сезону."]);
-      if (r.shoeW) k.push(["ok", "В секции с полками нижние полки только под обувь, до 3 рядов."]);
+      if (r.shoeW) k.push(["ok", "В секции с полками нижние полки только под обувь, до 3 рядов; сапоги стоят в одном ряду с туфлями, такой ряд от 420 мм высотой." + (r.jackIn ? " Над обувью штанга для курток: под ней нужно 900 мм." : "")]);
       k.push(["ok", "Отделение для обуви: от 320 мм глубиной, для туфель от 150 мм высотой, для сапог от 400 мм."]);
     }
     if (type === "bed") {
@@ -770,13 +779,19 @@
         // Внизу обувь. Выше полки: ближайшие к уровню груди под шапки и шарфы, следующие под сумки, остальные свободны.
         g.push(rect(x, 0, s.w, r.shoeH, COL.shoe, r.restPairs ? "" : 'stroke="#cfc9bf" stroke-width="1" fill-opacity=".45"'));
         ic(shoesOf(r.left), x, s.w, 0, r.shoeH);
+        // Куртки над обувью слева, полки справа.
+        if (r.jackIn) {
+          g.push(rect(x, rt - N.shortH, r.jackInW, N.shortH, COL.jack)); has.jack = true;
+          if (r.endRod) endRods(x, r.jackInW, r.jackRods1, rt - N.shortH, N.shortH, "jacket"); else { g.push(rod(x, r.jackInW, rt)); ic(["jacket"], x, r.jackInW, rt - N.shortH, N.shortH); }
+        }
+        var px = r.jackIn ? x + r.jackInW + N.panel : x, pw = r.shelfPartW;
         var hatI = [S.counts.hats || S.counts.khats ? "hat" : "", S.counts.scarves ? "scarf" : ""].filter(Boolean);
         var lvl = []; for (var j = 0; j < r.accLevels; j++) lvl.push(j);
         lvl.sort(function (a, b) { return Math.abs(r.shoeH + (a + 0.5) * N.bagRow - N.chest) - Math.abs(r.shoeH + (b + 0.5) * N.bagRow - N.chest); });
         lvl.forEach(function (j, n) {
           var y0 = r.shoeH + j * N.bagRow + 20, what = n < r.hatShelves ? hatI[n % hatI.length] : n < r.hatShelves + r.bagShelves ? "bag" : "";
-          g.push(rect(x, y0, s.w, N.bagRow - 20, what ? COL.acc : COL.shelf, 'stroke="#cfc9bf" stroke-width="1"'));
-          if (what) { ic([what], x, s.w, y0, N.bagRow - 20); has.acc = true; } else has.shelf = true;
+          g.push(rect(px, y0, pw, N.bagRow - 20, what ? COL.acc : COL.shelf, 'stroke="#cfc9bf" stroke-width="1"'));
+          if (what) { ic([what], px, pw, y0, N.bagRow - 20); has.acc = true; } else has.shelf = true;
         });
       }
       x += s.w + N.panel;
