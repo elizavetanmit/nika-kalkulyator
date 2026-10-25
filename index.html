@@ -587,7 +587,29 @@
     var group = S.type === "kitchen" ? "kitchen" : "wardrobe";
     document.getElementById("notYet").textContent = NOT_YET[S.type] || NOT_YET.bed;
     document.getElementById("unseen").innerHTML = UNSEEN[group].map(function (x) { return "<li>" + x + "</li>"; }).join("");
-    LAST = T().name + "; место " + fmt(o.have) + " мм; по нормам " + fmt(o.need) + " мм; " + (d < 0 ? "не хватает " + fmt(-d) : "запас " + fmt(d)) + " мм; источник: " + source();
+    LAST = summary(o, d);
+  }
+
+  // ---------- Итог для заявки и ссылка на расчёт ----------
+  function plain(s) { return String(s).replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim(); }
+  function b64(s) { return btoa(unescape(encodeURIComponent(s))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+  function unb64(s) { s = s.replace(/-/g, "+").replace(/_/g, "/"); while (s.length % 4) s += "="; return decodeURIComponent(escape(atob(s))); }
+  function shareLink() { return location.origin + location.pathname + "#r=1." + b64(JSON.stringify(S)); }
+  function summary(o, d) {
+    var L = [T().name], place = [];
+    document.querySelectorAll("#place input[data-p]").forEach(function (i) { place.push(plain(i.parentNode.firstChild.textContent) + " " + fmt(parseFloat(i.value)) + " мм"); });
+    if (S.type === "kitchen") place.unshift(S.kitchen.layout === "corner" ? "угловая" : "прямая");
+    if (place.length) L.push("Место: " + place.join(", "));
+    if (T().items) L.push("Живут: взрослых " + S.adults + ", детей " + S.kids);
+    o.rows.forEach(function (r) { L.push("• " + plain(r[0]) + (r[1] && S.type !== "kitchen" ? " (" + plain(r[1]) + ")" : "") + ": " + fmt(r[2]) + " мм"); });
+    L.push("Итого по нормам " + fmt(o.need) + " мм; " + o.haveLabel + " " + fmt(o.have) + " мм; " + (d < 0 ? "не хватает " + fmt(-d) : "запас " + fmt(d)) + " мм");
+    L.push("Ссылка на расчёт: " + shareLink());
+    return L.join("\n").replace(/ /g, " ");
+  }
+  function readLink() {
+    var m = /^#r=1\.([A-Za-z0-9_-]+)$/.exec(location.hash || "");
+    if (!m) return null;
+    try { return JSON.parse(unb64(m[1])); } catch (e) { return null; }
   }
 
   // ---------- Заявка в Яндекс Форму ----------
@@ -619,6 +641,7 @@
 
   // Вернулись после формы на основной странице: восстанавливаем введённое.
   var saved = null; try { saved = JSON.parse(load("calcState") || "null"); } catch (e) {}
+  var fromLink = readLink(); if (fromLink) saved = fromLink;
   if (saved && saved.type && TYPES.some(function (t) { return t.id === saved.type; })) {
     S = saved;
     typesBox.querySelectorAll(".type").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.id === S.type ? "true" : "false"); });
