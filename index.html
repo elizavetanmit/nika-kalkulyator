@@ -196,12 +196,14 @@
     depthGost: 560, depthCoat: 700, depthLight: 500,
     pair: 250, shoeRow: 170, bootRow: 420,
     stackW: 300, linenW: 400, stackH: 250, shelfStep: 300,
-    thin: 12, thick: 60, towel: 60, linen: 37, bedding: 0.11, hat: 300, hatShelf: 170,
-    linenSet: 0.0068, topMin: 200, // комплект белья 400 × 460 × 37 мм, м³; антресоль ниже 200 мм не считаю
+    thin: 12, thick: 60, towel: 60, bedding: 0.11, hat: 300, hatShelf: 170, topMin: 200, // антресоль ниже 200 мм не считаю
+    // Стопки не выше, чем у Нойферта, иначе разваливаются: 12 пододеяльников 140 мм, 12 простыней 130 мм,
+    // 24 наволочки 160 мм; шапки и шарфы как рубашки, 120 мм.
+    duvetPer: 12, sheetPer: 12, pillowPer: 24, accStackH: 120,
     panel: 16, walkDepth: 550, walkPass: 900, dressArea: 1500,
     // Детские вещи, шарфы и сумки: норм нет, допущения Ники (см. вики, nika-lead-magnet-plan).
     kidCoat: 60, kidZone: 900, kidPair: 180, kidHat: 200, scarf: 40, bag: 300, bagRow: 350,
-    // Шапки складывают стопкой, как свитера. Торцевой штанге нужно отделение шириной с вешалку.
+    // Шапки складывают стопкой, как рубашки. Торцевой штанге нужно отделение шириной с вешалку.
     hatT: 50, kidHatT: 40, endW: 650, kidEndW: 450
   };
 
@@ -464,16 +466,22 @@
     // в оставшееся место постельное бельё; на полки уходит только то, что наверх не влезло.
     r.topH = Math.max(0, H - 1950);
     function shelfOf(s300, s400) { var raw = (s300 * N.stackW + s400 * N.linenW) / r.levels; return raw > 0 ? Math.max(s400 ? N.linenW : N.stackW, up(raw, 50)) : 0; }
+    // Бельё стопками по видам, каждая стопка на место 400 мм; в комплекте пододеяльник, простыня и две наволочки.
+    var sets = c.linen || 0, depth = D || N.walkDepth;
+    r.linenStacks = sets ? Math.ceil(sets / N.duvetPer) + Math.ceil(sets / N.sheetPer) + Math.ceil(sets * 2 / N.pillowPer) : 0;
     var topW = r.longW + r.kidW + r.shortW + r.shoeW + shelfOf(r.s300, 0);
-    r.topVol = r.topH >= N.topMin ? topW * (D || N.walkDepth) * r.topH / 1e9 : 0;
+    // Высокую антресоль делю полкой через 300 мм, чтобы стопки не стояли друг на друге.
+    r.topLevels = r.topH >= N.topMin ? Math.max(1, Math.floor(r.topH / N.shelfStep)) : 0;
+    r.topVol = r.topLevels ? topW * depth * r.topH / 1e9 : 0;
     r.beddingVol = (c.bedding || 0) * N.bedding;
-    r.linenTop = Math.min(c.linen || 0, Math.floor(Math.max(0, r.topVol - r.beddingVol) / N.linenSet));
-    r.s400 = Math.ceil(((c.linen || 0) - r.linenTop) * N.linen / N.stackH);
+    r.bedW = r.topVol ? Math.ceil(r.beddingVol * 1e9 / (depth * r.topH)) : 0;
+    r.linenTop = Math.min(r.linenStacks, Math.max(0, Math.floor((topW - r.bedW) / N.linenW)) * r.topLevels);
+    r.s400 = r.linenStacks - r.linenTop;
     r.shelfW = shelfOf(r.s300, r.s400);
 
     // Шапки, шарфы и сумки на полках над штангой; не хватает места — отдельная секция с полками.
     r.hats = c.hats || 0;
-    r.accLen = (Math.ceil((c.hats || 0) * N.hatT / N.stackH) + Math.ceil((c.khats || 0) * N.kidHatT / N.stackH) + Math.ceil((c.scarves || 0) * N.scarf / N.stackH)) * N.stackW + (c.bags || 0) * N.bag;
+    r.accLen = (Math.ceil((c.hats || 0) / Math.floor(N.accStackH / N.hatT)) + Math.ceil((c.khats || 0) / Math.floor(N.accStackH / N.kidHatT)) + Math.ceil((c.scarves || 0) / Math.floor(N.accStackH / N.scarf))) * N.stackW + (c.bags || 0) * N.bag;
     var base = [r.longW, r.kidW, r.shortW, r.shelfW, r.shoeW].reduce(function (a, x) { return a + x; }, 0);
     var topLevels = r.topH >= N.bagRow ? Math.floor(r.topH / N.bagRow) : r.topH >= N.hatShelf ? 1 : 0;
     r.accCap = Math.max(0, base) * topLevels;
@@ -498,7 +506,7 @@
     if (r.kidW) h.push([r.endRod ? "Торцевые штанги для детской одежды" : "Штанга для детской одежды", r.kidN + " шт.: " + [c.kcoats ? pl(c.kcoats, "пальто", "пальто", "пальто") : "", c.kjackets ? pl(c.kjackets, "куртка", "куртки", "курток") : ""].filter(Boolean).join(" и ") + ", отделение 900 мм по высоте" + ends(r.kidRods, N.kidEndW), r.kidW]);
     if (r.shortW) h.push([r.endRod ? "Торцевые штанги для вещей на плечиках" : "Штанга для вещей на плечиках", c.hang + " шт., " + mm(r.hangLen) + " штанги" + (r.tiers === 2 ? ", в два яруса по 900 мм" : ", в один ярус: на два высоты не хватает") + ends(r.shortRods * r.tiers, N.endW), r.shortW]);
     if (r.shelfW) h.push(["Полки", pl(r.s300 + r.s400, "стопка", "стопки", "стопок") + ", " + pl(r.levels, "полка", "полки", "полок") + " по высоте через 300 мм", r.shelfW]);
-    if (r.linenTop || (c.bedding && r.topVol)) h.push(["Антресоль", [r.linenTop ? pl(r.linenTop, "комплект", "комплекта", "комплектов") + " постельного белья" : "", c.bedding && r.topVol ? "запасные одеяла и подушки" : ""].filter(Boolean).join(", ") + "; над штангой, ширины не добавляет", 0]);
+    if (r.linenTop || (c.bedding && r.topVol)) h.push(["Антресоль", [r.linenTop ? "постельное бельё, " + pl(r.linenTop, "стопка", "стопки", "стопок") : "", c.bedding && r.topVol ? "запасные одеяла и подушки" : ""].filter(Boolean).join(", ") + "; над штангой, ширины не добавляет", 0]);
     if (r.accW) h.push(["Полки для шапок, шарфов и сумок", "над штангой места не хватает, " + pl(Math.floor(1950 / N.bagRow), "полка", "полки", "полок") + " по высоте через 350 мм", r.accW]);
     var pairs = (c.shoes || 0) + (c.boots || 0) + (c.kshoes || 0);
     if (pairs > 0) {
@@ -523,7 +531,7 @@
     if (type === "hall") {
       if (r.accLen) {
         if (r.topH < N.hatShelf) k.push(["warn", "Над штангой нет места под полку для головных уборов: ей нужно от 170 мм по высоте и от 240 мм в глубину. Шапки, шарфы и сумки уходят в отдельную секцию с полками."]);
-        else k.push([r.accW ? "warn" : "ok", "Головные уборы, шарфы и сумки кладут на полку над штангой, глубина полки от 240 мм. Им нужно около " + mm(r.accLen) + " полок, над штангой есть " + mm(r.accCap) + (r.accW ? ", остальное в отдельную секцию." : ".")]);
+        else k.push([r.accW ? "warn" : "ok", "Головные уборы, шарфы и сумки кладут на полку над штангой, глубина полки от 240 мм. Шапки и шарфы складываю стопками не выше 120 мм, как рубашки, иначе разваливаются. Им нужно около " + mm(r.accLen) + " полок, над штангой есть " + mm(r.accCap) + (r.accW ? ", остальное в отдельную секцию." : ".")]);
       }
       k.push(["ok", "Отделение для обуви: от 320 мм глубиной, для туфель от 150 мм высотой, для сапог от 400 мм."]);
     }
@@ -532,12 +540,13 @@
       if (r.topVol) {
         k.push(["ok", "Над штангой остаётся " + mm(r.topH) + " под антресоль. Туда без стремянки не дотянуться, поэтому кладу туда то, чем пользуются не каждый день: постельное бельё, запасные одеяла и подушки."]);
         if (r.beddingVol > r.topVol) k.push(["warn", "Одеялам и подушкам нужно около " + m3(r.beddingVol) + ", а антресоль даёт " + m3(r.topVol) + ". Постельное бельё уходит на полки, а части одеял найдите место заранее."]);
-        else if (linen > r.linenTop) k.push(["warn", "На антресоль помещается " + pl(r.linenTop, "комплект", "комплекта", "комплектов") + " белья из " + linen + ", остальные на полках."]);
-        else if (linen || c.bedding) k.push(["ok", "Всё помещается на антресоль: нужно около " + m3(r.beddingVol + linen * N.linenSet) + ", она даёт " + m3(r.topVol) + "."]);
+        else if (r.linenStacks > r.linenTop) k.push(["warn", "На антресоль помещается " + pl(r.linenTop, "стопка", "стопки", "стопок") + " белья из " + r.linenStacks + ", остальные на полках."]);
+        else if (linen || c.bedding) k.push(["ok", "Всё помещается на антресоль" + (r.linenTop && r.topLevels > 1 ? ". Внутри нужна полка через 300 мм, чтобы стопки белья не ставить друг на друга." : ".")]);
       } else {
         if (r.topH > 0) k.push(["warn", "Над штангой остаётся " + mm(r.topH) + ": под антресоль этого мало, постельное бельё уходит на полки."]);
         if (c.bedding) k.push(["warn", (r.topH > 0 ? "" : "Антресоли нет. ") + "Одеялам и подушкам нужно около " + m3(r.beddingVol) + ", найдите им место заранее."]);
       }
+      if (linen) k.push(["ok", "Постельное бельё кладу стопками по видам: пододеяльники и простыни по 12 штук, наволочки по 24. Это 130–160 мм в высоту, стопка выше разваливается. " + pl(linen, "комплект", "комплекта", "комплектов") + " дают " + pl(r.linenStacks, "стопку", "стопки", "стопок") + "."]);
       if (r.s400) k.push(["ok", "Отделение под постельное бельё на полках: 400 мм шириной и 460 мм глубиной или наоборот, смотря как класть стопки."]);
       k.push(["ok", "Ящики для белья и носков: верх верхнего ящика не выше 1 250 мм от пола."]);
     }
