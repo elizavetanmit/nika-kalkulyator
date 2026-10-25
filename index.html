@@ -199,7 +199,9 @@
     thin: 12, thick: 60, towel: 60, linen: 37, bedding: 0.11, hat: 300, hatShelf: 170,
     panel: 16, walkDepth: 550, walkPass: 900, dressArea: 1500,
     // Детские вещи, шарфы и сумки: норм нет, допущения Ники (см. вики, nika-lead-magnet-plan).
-    kidCoat: 60, kidZone: 900, kidPair: 180, kidHat: 200, scarf: 40, bag: 300, bagRow: 350
+    kidCoat: 60, kidZone: 900, kidPair: 180, kidHat: 200, scarf: 40, bag: 300, bagRow: 350,
+    // Шапки складывают стопкой, как свитера. Торцевой штанге нужно отделение шириной с вешалку.
+    hatT: 50, kidHatT: 40, endW: 650, kidEndW: 450
   };
 
   function fmt(n) { return Math.round(n).toLocaleString("ru-RU"); }
@@ -413,6 +415,15 @@
     r.kidN = (c.kcoats || 0) + (c.kjackets || 0);
     r.kidW = Math.ceil(r.kidN * N.kidCoat);
 
+    // Мелкий шкаф: вешалки поперёк не встают, ставлю торцевые выдвижные штанги.
+    // Штанга идёт вглубь шкафа, вещей на ней по её длине, а отделение под каждую шириной с вешалку.
+    r.endRod = D < N.depthLight;
+    if (r.endRod) {
+      r.rodLen = Math.max(150, D - 50);
+      r.longRods = Math.ceil(r.longW / r.rodLen); r.kidRods = Math.ceil(r.kidW / r.rodLen); r.shortRods = Math.ceil(r.shortW / r.rodLen);
+      r.longW = r.longRods * N.endW; r.kidW = r.kidRods * N.kidEndW; r.shortW = r.shortRods * N.endW;
+    }
+
     // Обувь: сначала под одеждой на штангах, остальное в отдельную секцию.
     var left = { shoes: c.shoes || 0, boots: c.boots || 0, kshoes: c.kshoes || 0 };
     var KIND = { shoes: [N.pair, N.shoeRow], boots: [N.pair, N.bootRow], kshoes: [N.kidPair, N.shoeRow] };
@@ -433,9 +444,10 @@
       return best;
     }
     var ORD = [["shoes", "kshoes", "boots"], ["kshoes", "shoes", "boots"], ["boots", "shoes", "kshoes"]];
-    var u1 = r.longW ? fill(r.longW, rodTop - r.longZone, ORD) : { sum: 0, h: 0 };
+    // Детская обувь сначала под детской одеждой, потом остальное под взрослой.
     var u2 = r.kidW ? fill(r.kidW, rodTop - N.kidZone, [ORD[1], ORD[0], ORD[2]]) : { sum: 0, h: 0 };
-    r.under = u1.sum; r.underH = u1.h; r.underKid = u2.sum; r.underKidH = u2.h;
+    var u1 = r.longW ? fill(r.longW, rodTop - r.longZone, ORD) : { sum: 0, h: 0 };
+    r.under = u1.sum; r.underH = u1.h; r.underKid = u2.sum; r.underKidH = u2.h; r.u1 = u1.got || {}; r.u2 = u2.got || {}; r.left = left;
     r.restPairs = left.shoes + left.boots + left.kshoes; r.shoeW = 0;
     if (r.restPairs > 0) {
       for (var w = 200; w <= 4000; w += 50) {
@@ -451,7 +463,7 @@
     // Шапки, шарфы и сумки на полках над штангой; не хватает места — отдельная секция с полками.
     r.topH = Math.max(0, H - 1950);
     r.hats = c.hats || 0;
-    r.accLen = (c.hats || 0) * N.hat + (c.khats || 0) * N.kidHat + Math.ceil((c.scarves || 0) * N.scarf / N.stackH) * N.stackW + (c.bags || 0) * N.bag;
+    r.accLen = (Math.ceil((c.hats || 0) * N.hatT / N.stackH) + Math.ceil((c.khats || 0) * N.kidHatT / N.stackH) + Math.ceil((c.scarves || 0) * N.scarf / N.stackH)) * N.stackW + (c.bags || 0) * N.bag;
     var base = [r.longW, r.kidW, r.shortW, r.shelfW, r.shoeW].reduce(function (a, x) { return a + x; }, 0);
     var topLevels = r.topH >= N.bagRow ? Math.floor(r.topH / N.bagRow) : r.topH >= N.hatShelf ? 1 : 0;
     r.accCap = Math.max(0, base) * topLevels;
@@ -471,16 +483,18 @@
 
   function rowsWardrobe(r, c) {
     var h = [];
-    if (r.longW) h.push(["Штанга для длинной одежды", (c.coats ? (c.coats + " шт. верхней одежды") : "") + (c.coats && c.dress ? " и " : "") + (c.dress ? pl(c.dress, "платье", "платья", "платьев") : "") + ", отделение от " + mm(r.longZone) + " по высоте", r.longW]);
-    if (r.kidW) h.push(["Штанга для детской одежды", r.kidN + " шт.: " + [c.kcoats ? pl(c.kcoats, "пальто", "пальто", "пальто") : "", c.kjackets ? pl(c.kjackets, "куртка", "куртки", "курток") : ""].filter(Boolean).join(" и ") + ", отделение 900 мм по высоте", r.kidW]);
-    if (r.shortW) h.push(["Штанга для вещей на плечиках", c.hang + " шт., " + mm(r.hangLen) + " штанги" + (r.tiers === 2 ? ", в два яруса по 900 мм" : ", в один ярус: на два высоты не хватает"), r.shortW]);
+    // Для торцевых штанг: сколько штанг и по сколько отделений.
+    function ends(n, w) { return r.endRod ? "; " + pl(n, "торцевая выдвижная штанга", "торцевые выдвижные штанги", "торцевых выдвижных штанг") + " по " + mm(r.rodLen) + ", отделение " + mm(w) + " шириной на каждую" : ""; }
+    if (r.longW) h.push([r.endRod ? "Торцевые штанги для длинной одежды" : "Штанга для длинной одежды", (c.coats ? (c.coats + " шт. верхней одежды") : "") + (c.coats && c.dress ? " и " : "") + (c.dress ? pl(c.dress, "платье", "платья", "платьев") : "") + ", отделение от " + mm(r.longZone) + " по высоте" + ends(r.longRods, N.endW), r.longW]);
+    if (r.kidW) h.push([r.endRod ? "Торцевые штанги для детской одежды" : "Штанга для детской одежды", r.kidN + " шт.: " + [c.kcoats ? pl(c.kcoats, "пальто", "пальто", "пальто") : "", c.kjackets ? pl(c.kjackets, "куртка", "куртки", "курток") : ""].filter(Boolean).join(" и ") + ", отделение 900 мм по высоте" + ends(r.kidRods, N.kidEndW), r.kidW]);
+    if (r.shortW) h.push([r.endRod ? "Торцевые штанги для вещей на плечиках" : "Штанга для вещей на плечиках", c.hang + " шт., " + mm(r.hangLen) + " штанги" + (r.tiers === 2 ? ", в два яруса по 900 мм" : ", в один ярус: на два высоты не хватает") + ends(r.shortRods * r.tiers, N.endW), r.shortW]);
     if (r.shelfW) h.push(["Полки", pl(r.s300 + r.s400, "стопка", "стопки", "стопок") + ", " + pl(r.levels, "полка", "полки", "полок") + " по высоте через 300 мм", r.shelfW]);
     if (r.accW) h.push(["Полки для шапок, шарфов и сумок", "над штангой места не хватает, " + pl(Math.floor(1950 / N.bagRow), "полка", "полки", "полок") + " по высоте через 350 мм", r.accW]);
     var pairs = (c.shoes || 0) + (c.boots || 0) + (c.kshoes || 0);
     if (pairs > 0) {
       var where = [];
       if (r.longW) where.push("под длинную одежду встанет " + pl(r.under, "пара", "пары", "пар"));
-      if (r.kidW) where.push("под детскую " + pl(r.underKid, "пара", "пары", "пар"));
+      if (r.kidW && r.underKid) where.push("под детскую " + pl(r.underKid, "пара", "пары", "пар"));
       h.push(["Обувь", pl(pairs, "пара", "пары", "пар") + (where.length ? ": " + where.join(", ") : "") + (r.shoeW ? (where.length ? ", для остальных (" : "; нужна отдельная секция (") + pl(r.restPairs, "пара", "пары", "пар") + (where.length ? ") нужна отдельная секция" : ")") : ""), r.shoeW]);
     }
     h.push(["Стенки и перегородки", (r.sections.length + 1) + " шт. по 16 мм", (r.sections.length + 1) * N.panel]);
@@ -490,7 +504,7 @@
   function checksWardrobe(r, c, type) {
     var k = [];
     var hasCoats = (c.coats || 0) > 0;
-    if (r.D < N.depthLight) k.push(["warn", "Глубина " + mm(r.D) + ": вешалки поперёк не встанут. Нужна торцевая выдвижная штанга."]);
+    if (r.D < N.depthLight) k.push(["warn", "Глубина " + mm(r.D) + ": вешалки поперёк не встанут. Считаю торцевые выдвижные штанги: штанга идёт вглубь шкафа и получается около " + mm(r.rodLen) + " длиной, а отделению под каждую нужна ширина с вешалку, " + mm(N.endW) + " для взрослой одежды и " + mm(N.kidEndW) + " для детской."]);
     else if (r.D < N.depthGost) k.push(["warn", "Глубина " + mm(r.D) + ": рубашки и лёгкие платья встанут, " + (hasCoats ? "пальто и пуховики будут упираться в двери." : "объёмные вещи будут упираться в двери.") + " Для одежды на плечиках я закладываю от 560 мм."]);
     else if (hasCoats && r.D < N.depthCoat) k.push(["warn", "Глубина " + mm(r.D) + ": для обычной одежды хватит, но для пуховиков и шуб я закладываю 700 мм."]);
     else k.push(["ok", "Глубина " + mm(r.D) + " подходит для одежды на плечиках."]);
@@ -639,24 +653,62 @@
     function X(v) { return pad + v * k; } function Y(v) { return top + (H - v) * k; }
     function rect(x, y, w, h, f, e) { return '<rect x="' + X(x).toFixed(1) + '" y="' + Y(y + h).toFixed(1) + '" width="' + Math.max(0, w * k).toFixed(1) + '" height="' + Math.max(0, h * k).toFixed(1) + '" fill="' + f + '" ' + (e || "") + '/>'; }
     function rod(x, w, h) { return '<line x1="' + X(x).toFixed(1) + '" x2="' + X(x + w).toFixed(1) + '" y1="' + Y(h).toFixed(1) + '" y2="' + Y(h).toFixed(1) + '" stroke="#2E3222" stroke-width="2"/>'; }
-    var g = [], x = N.panel, rt = r.rodTop;
-    if (H > 1950) g.push(rect(N.panel, 1950, r.need - 2 * N.panel, H - 1950, COL.top));
+    var g = [], x = N.panel, rt = r.rodTop, used = {};
+    // Иконки в зоне (мм): в ряд, если зона широкая, иначе столбиком; размер по меньшей стороне.
+    function ic(list, x0, w, y0, h, maxS) {
+      list = list.filter(Boolean); if (!list.length) return;
+      var pw = w * k, ph = h * k, n = list.length, row = pw >= ph;
+      var s = Math.min(maxS || 1.8,row ? Math.min((pw - 4) / (n * 24), (ph - 4) / 24) : Math.min((pw - 4) / 24, (ph - 4) / (n * 24)));
+      if (s < 0.4) return;
+      var cx = X(x0 + w / 2), cy = Y(y0 + h / 2), st = 24 * s;
+      list.forEach(function (kd, i) {
+        var off = (i - (n - 1) / 2) * st;
+        g.push(kicon(kd, row ? cx + off : cx, row ? cy : cy + off, s)); used[kd] = true;
+      });
+    }
+    function shoesOf(got) { return [got.boots ? "boot" : "", got.shoes ? "shoe" : "", got.kshoes ? "shoe" : ""].filter(function (v, i, a) { return v && a.indexOf(v) === i; }); }
+    // Торцевые штанги видно с торца: кружок штанги и вещь лицом к зрителю, отделения через пунктир.
+    function endRods(x0, w, n, zoneTop, zoneH, kind) {
+      var cw = w / n;
+      for (var i = 0; i < n; i++) {
+        var cx = x0 + cw * i;
+        if (i) g.push('<line x1="' + X(cx).toFixed(1) + '" x2="' + X(cx).toFixed(1) + '" y1="' + Y(rt).toFixed(1) + '" y2="' + Y(zoneTop).toFixed(1) + '" stroke="#2E3222" stroke-width="1" stroke-dasharray="3 3"/>');
+        g.push('<circle cx="' + X(cx + cw / 2).toFixed(1) + '" cy="' + Y(rt).toFixed(1) + '" r="4" fill="#FFFFFF" stroke="#2E3222" stroke-width="2"/>');
+        ic([kind], cx, cw, zoneTop, zoneH);
+      }
+      used.endrod = true;
+    }
+    if (H > 1950) {
+      g.push(rect(N.panel, 1950, r.need - 2 * N.panel, H - 1950, COL.top));
+      if (S.type === "hall" && r.accLen) ic([S.counts.hats || S.counts.khats ? "hat" : "", S.counts.scarves ? "scarf" : "", S.counts.bags ? "bag" : ""], N.panel, r.need - 2 * N.panel, 1950, H - 1950, 1.6);
+    }
     r.sections.forEach(function (s) {
       if (s.k === "long") {
-        g.push(rect(x, rt - r.longZone, s.w, r.longZone, COL.long)); g.push(rod(x, s.w, rt));
-        if (r.under) g.push(rect(x, 0, s.w, r.underH, COL.shoe));
+        g.push(rect(x, rt - r.longZone, s.w, r.longZone, COL.long));
+        var lk = S.type === "hall" ? "coat" : "dress";
+        if (r.endRod) endRods(x, s.w, r.longRods, rt - r.longZone, r.longZone, lk); else { g.push(rod(x, s.w, rt)); ic([lk], x, s.w, rt - r.longZone, r.longZone); }
+        if (r.under) { g.push(rect(x, 0, s.w, r.underH, COL.shoe)); ic(shoesOf(r.u1), x, s.w, 0, r.underH); }
       } else if (s.k === "kid") {
-        g.push(rect(x, rt - N.kidZone, s.w, N.kidZone, COL.kid)); g.push(rod(x, s.w, rt));
-        if (r.underKid) g.push(rect(x, 0, s.w, r.underKidH, COL.shoe));
+        g.push(rect(x, rt - N.kidZone, s.w, N.kidZone, COL.kid));
+        if (r.endRod) endRods(x, s.w, r.kidRods, rt - N.kidZone, N.kidZone, "jacket"); else { g.push(rod(x, s.w, rt)); ic(["jacket"], x, s.w, rt - N.kidZone, N.kidZone, 0.9); }
+        if (r.underKid) { g.push(rect(x, 0, s.w, r.underKidH, COL.shoe)); ic(shoesOf(r.u2), x, s.w, 0, r.underKidH, 1.3); }
       } else if (s.k === "acc") {
-        for (var j = 0; j < Math.floor(1950 / N.bagRow); j++) g.push(rect(x, j * N.bagRow, s.w, N.bagRow - 20, COL.acc, 'stroke="#cfc9bf" stroke-width="1"'));
+        var nAcc = Math.floor(1950 / N.bagRow), accI = [S.counts.hats || S.counts.khats ? "hat" : "", S.counts.scarves ? "scarf" : "", S.counts.bags ? "bag" : ""].filter(Boolean);
+        for (var j = 0; j < nAcc; j++) { g.push(rect(x, j * N.bagRow, s.w, N.bagRow - 20, COL.acc, 'stroke="#cfc9bf" stroke-width="1"')); if (accI.length) ic([accI[j % accI.length]], x, s.w, j * N.bagRow, N.bagRow - 20); }
       } else if (s.k === "short") {
-        g.push(rect(x, rt - N.shortH, s.w, N.shortH, COL.short)); g.push(rod(x, s.w, rt));
-        if (r.tiers === 2) { g.push(rect(x, rt - 2 * N.shortH - 50, s.w, N.shortH, COL.short)); g.push(rod(x, s.w, rt - N.shortH - 50)); }
+        g.push(rect(x, rt - N.shortH, s.w, N.shortH, COL.short));
+        if (r.endRod) endRods(x, s.w, r.shortRods, rt - N.shortH, N.shortH, "hanger"); else { g.push(rod(x, s.w, rt)); ic(["hanger"], x, s.w, rt - N.shortH, N.shortH); }
+        if (r.tiers === 2) {
+          var rt2 = rt - N.shortH - 50;
+          g.push(rect(x, rt2 - N.shortH, s.w, N.shortH, COL.short));
+          if (r.endRod) { var keep = rt; rt = rt2; endRods(x, s.w, r.shortRods, rt2 - N.shortH, N.shortH, "hanger"); rt = keep; } else { g.push(rod(x, s.w, rt2)); ic(["hanger"], x, s.w, rt2 - N.shortH, N.shortH); }
+        }
       } else if (s.k === "shelf") {
-        for (var i = 0; i < r.levels; i++) g.push(rect(x, i * N.shelfStep, s.w, N.shelfStep - 20, COL.shelf, 'stroke="#cfc9bf" stroke-width="1"'));
+        for (var i = 0; i < r.levels; i++) { g.push(rect(x, i * N.shelfStep, s.w, N.shelfStep - 20, COL.shelf, 'stroke="#cfc9bf" stroke-width="1"')); ic(["stack"], x, s.w, i * N.shelfStep, N.shelfStep - 20, 0.9); }
       } else if (s.k === "shoe") {
-        g.push(rect(x, 0, s.w, Math.min(rt, 1200), COL.shoe));
+        var shH = Math.min(rt, 1200);
+        g.push(rect(x, 0, s.w, shH, COL.shoe));
+        ic(shoesOf(r.left), x, s.w, 0, shH);
       }
       x += s.w + N.panel;
     });
@@ -668,6 +720,12 @@
     var has = {}; r.sections.forEach(function (s) { has[s.k] = true; });
     var LEG = [["long", "длинная одежда"], ["kid", "детская одежда"], ["short", "на плечиках"], ["shelf", "полки"], ["acc", "шапки, шарфы, сумки"]];
     var leg = '<div class="legend">' + LEG.filter(function (l) { return has[l[0]]; }).map(function (l) { return '<span><i style="background:' + COL[l[0]] + ';border:1px solid #e4e2dd"></i>' + l[1] + '</span>'; }).join("") + ((r.under || r.underKid || r.shoeW) ? '<span><i style="background:' + COL.shoe + '"></i>обувь</span>' : '') + (H > 1950 ? '<span><i style="background:' + COL.top + '"></i>' + (S.type === "hall" ? "полки над штангой" : "антресоль") + '</span>' : '') + '</div>';
+    var INAME = { coat: "пальто и куртки", jacket: "детская одежда", dress: "платья", hanger: "вещи на плечиках", shoe: "обувь", boot: "сапоги", hat: "шапки", scarf: "шарфы", bag: "сумки", stack: "сложенные вещи", endrod: "торцевая выдвижная штанга" };
+    leg += '<div class="legend">' + ["coat", "dress", "jacket", "hanger", "endrod", "stack", "shoe", "boot", "hat", "scarf", "bag"].filter(function (kd) { return used[kd]; }).map(function (kd) {
+      var pic = kd === "endrod" ? '<svg viewBox="0 0 24 24" width="15" height="15" style="vertical-align:-3px;margin-right:4px" aria-hidden="true"><circle cx="12" cy="12" r="5" fill="#FFFFFF" stroke="#2E3222" stroke-width="2.4"/></svg>'
+        : '<svg viewBox="0 0 24 24" width="15" height="15" style="vertical-align:-3px;margin-right:4px" fill="none" stroke="#2E3222" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + KICON[kd] + '</svg>';
+      return '<span>' + pic + INAME[kd] + '</span>';
+    }).join("") + '</div>';
     return svg(VW, VH, g) + leg;
   }
 
@@ -689,7 +747,18 @@
     pans: '<circle cx="9.5" cy="13" r="6"/><circle cx="9.5" cy="13" r="3.5"/><line x1="15.5" y1="13" x2="22" y2="13"/>',
     tray: '<rect x="3" y="8" width="18" height="8" rx="1"/><rect x="5.5" y="10" width="13" height="4" rx=".5"/>',
     ladle: '<path d="M19 3l-8 10"/><path d="M4 13h11a5.5 5.5 0 0 1-11 0z"/>',
-    glass: '<path d="M8 3h8l-.8 5.5a3.2 3.2 0 0 1-6.4 0z"/><line x1="12" y1="12" x2="12" y2="19"/><line x1="9" y1="20" x2="15" y2="20"/>'
+    glass: '<path d="M8 3h8l-.8 5.5a3.2 3.2 0 0 1-6.4 0z"/><line x1="12" y1="12" x2="12" y2="19"/><line x1="9" y1="20" x2="15" y2="20"/>',
+    coat: '<path d="M12 4.5a1.4 1.4 0 1 0-1.4-1.4"/><path d="M9 6l3 1.5L15 6l4 2.5-1.5 3V21h-11V11.5L5 8.5z"/><line x1="12" y1="7.5" x2="12" y2="21"/>',
+    jacket: '<path d="M12 6.5a1.4 1.4 0 1 0-1.4-1.4"/><path d="M9 8l3 1.5L15 8l4 2.5-1.5 2.5V19h-11v-6L5 10.5z"/><line x1="12" y1="9.5" x2="12" y2="19"/>',
+    dress: '<path d="M12 4a1.4 1.4 0 1 0-1.4-1.4"/><path d="M10 5.5h4l-.8 4L18 21H6l4.8-11.5z"/>',
+    hanger: '<path d="M12 7a1.6 1.6 0 1 0-1.6-1.6"/><path d="M12 7l-8.5 6.5h17z"/><path d="M7 13.5v6h10v-6"/>',
+    shoe: '<path d="M3 17v-6l4 .5 2.5-3 2 1v2.5l7 2 2.5 1.5V17z"/><line x1="3" y1="15" x2="21" y2="15"/>',
+    boot: '<path d="M8 3h6v10l5 2 1.5 2v2H8z"/><line x1="8" y1="17" x2="20.5" y2="17"/>',
+    hat: '<path d="M5 15.5a7 7 0 0 1 14 0z"/><rect x="4" y="15.5" width="16" height="3.5" rx="1"/><circle cx="12" cy="7" r="1.6"/>',
+    bag: '<rect x="4" y="9" width="16" height="11" rx="2"/><path d="M9 9V7a3 3 0 0 1 6 0v2"/>',
+    scarf: '<path d="M6 4h12v4.5H6z"/><path d="M9 8.5V20h3.5V8.5"/><line x1="9" y1="17" x2="12.5" y2="17"/>',
+    stack: '<rect x="4" y="5" width="16" height="4" rx="1"/><rect x="4" y="10" width="16" height="4" rx="1"/><rect x="4" y="15" width="16" height="4" rx="1"/>',
+    endrod: '<rect x="9" y="2" width="6" height="3"/><circle cx="12" cy="7" r="2"/><path d="M12 9v1"/><path d="M12 10l-6 5h12z"/><path d="M7.5 15v6h9v-6"/>'
   };
   var KNAME = { fridge: "холодильник", sink: "мойка", dw: "посудомойка", pot: "варочная панель", stove: "плита", oven: "духовка", mw: "микроволновка", hood: "вытяжка", dryer: "сушилка над мойкой", drawers: "ящики", cutlery: "ложки и вилки", pans: "кастрюли и сковородки", tray: "противни", ladle: "половники и лопатки", glass: "посуда и бокалы" };
   function kicon(kind, cx, cy, s) {
