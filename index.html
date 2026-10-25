@@ -96,7 +96,15 @@
   .next p, .next li { color: #e3eaf1; font-size: 15px; }
   .next ul { padding-left: 20px; margin: 8px 0 14px; }
   #lead { margin-top: 18px; }
-  #yaform iframe { display: block; width: 100%; height: 900px; border: 0; border-radius: 12px; background: var(--white); margin-top: 16px; }
+  .next form { display: grid; gap: 12px; margin-top: 16px; }
+  .next label.f { color: #d3dde8; }
+  .next label.f input, .next label.f select { border-color: transparent; }
+  .next .phone { display: grid; grid-template-columns: 112px 1fr; gap: 10px; }
+  .chk { display: flex; align-items: flex-start; gap: 10px; font-size: 13.5px; line-height: 1.4; color: #e3eaf1; cursor: pointer; }
+  .chk input { width: 20px; height: 20px; flex: none; margin: 1px 0 0; accent-color: var(--white); }
+  .chk a { color: var(--white); }
+  .next form .btn { margin-top: 4px; }
+  #done p { margin: 0 0 4px; }
   .policy a { color: var(--white); }
   .policy { font-size: 12.5px; color: #d3dde8; margin: 8px 0 0; }
   .formmsg { font-size: 14px; color: var(--white); min-height: 1em; margin: 10px 0 0; }
@@ -150,20 +158,25 @@
       <p id="unseenIntro"></p>
       <ul id="unseen"></ul>
       <p>Такие мелочи лучше обсудить со специалистом до того, как заказывать мебель. Можем сделать это с вами на созвоне.</p>
-      <p class="hidden" id="sent"><b>Ваша заявка уже у нас:</b> напишу вам в мессенджер, и договоримся о созвоне.</p>
     </section>
 
     <section class="next" id="gate">
-      <h2>Обсудить расчёт</h2>
+      <h2>Получить расчёт в Telegram</h2>
       <p id="notYet"></p>
-      <p>Как из этого сделать мебель, которая встанет в вашу квартиру, давайте обсудим на созвоне. Расскажете, что храните и что не устраивает сейчас, а я посмотрю ваш расчёт и подскажу, с чего начать.</p>
-      <p>Оставьте контакты, и я напишу вам в мессенджер, чтобы договориться о времени.</p>
-      <div id="lead">
-        <button class="btn" type="button" id="leadBtn">Записаться на созвон</button>
+      <p>Оставьте контакты, и я пришлю этот расчёт в Telegram: схему, таблицу по отделениям и список, что проверить в проекте.</p>
+      <form id="leadForm" novalidate>
+        <label class="f">Как к вам обращаться?<input id="fName" type="text" autocomplete="given-name" maxlength="100"></label>
+        <div class="phone">
+          <label class="f">Код страны<select id="fCc"><option>+7</option><option>+375</option><option>+380</option><option>+374</option><option>+995</option><option>+994</option><option>+998</option><option>+996</option><option>+992</option><option>+993</option><option>+373</option><option>+371</option><option>+372</option><option>+370</option><option>+90</option><option>+49</option></select></label>
+          <label class="f">Номер телефона<input id="fPhone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="900 123 45 67" maxlength="20"></label>
+        </div>
+        <label class="f">Ник в Telegram<input id="fTg" type="text" placeholder="@nick" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="off" maxlength="33"></label>
+        <label class="chk"><input id="fConsent" type="checkbox"><span>Даю <a href="consent.html" target="_blank">согласие на обработку персональных данных</a>. <a href="policy.html" target="_blank">Политика обработки данных</a></span></label>
+        <label class="chk"><input id="fNews" type="checkbox"><span>Хочу получать самые интересные новости Ники, без спама</span></label>
+        <button class="btn" type="submit" id="leadBtn">Получить расчёт в Telegram</button>
         <p class="formmsg" id="formmsg" role="status"></p>
-        <div id="yaform"></div>
-        <p class="policy">Как мы храним и защищаем данные: <a href="policy.html" target="_blank">Политика обработки персональных данных</a></p>
-      </div>
+      </form>
+      <div id="done" class="hidden"></div>
     </section>
 
     <section class="sources">
@@ -180,14 +193,8 @@
 
 <script>
 (function () {
-  // После отправки Яндекс Форма перенаправляет на эту же страницу с ?ok=1.
-  // Если перенаправление случилось внутри фрейма формы, открываем расчёт на основной странице и дальше не работаем.
-  var OK = false; try { OK = new URLSearchParams(location.search).get("ok") === "1"; } catch (e) {}
-  if (OK && window.parent !== window) { try { window.parent.__calcOpen(); } catch (e) {} return; }
   function store(k, v) { try { sessionStorage.setItem(k, v); } catch (e) {} }
   function load(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }
-  var OPEN = OK || load("calcOpen") === "1";
-  if (OK) store("calcOpen", "1");
 
   // Нормы в мм. ГОСТ 13025.1-85; Нойферт П., Нефф Л. «Проектирование и строительство. Дом, квартира, сад» (2005), с. 113–119, 131, 134.
   var N = {
@@ -946,8 +953,7 @@
     h += '</ul>';
     if (o.sizes) h += '<h3>Размеры, которые стоит заложить</h3><ul class="sizes">' + o.sizes.map(function (x) { return '<li>' + x + '</li>'; }).join("") + '</ul>';
     document.getElementById("result").innerHTML = h;
-    document.getElementById("gate").classList.toggle("hidden", OPEN);
-    document.getElementById("sent").classList.toggle("hidden", !OPEN);
+    resetLead();
     store("calcState", JSON.stringify(S));
 
     var un = UNSEEN[S.type] || UNSEEN.bed;
@@ -977,6 +983,8 @@
     o.rows.forEach(function (r) { L.push("• " + plain(r[0]) + (r[1] && S.type !== "kitchen" ? " (" + plain(r[1]) + ")" : "") + (r[2] ? ": " + fmt(r[2]) + " мм" : "")); });
     if (o.upper) { L.push((o.upperLabel || "Верхние модули") + ":"); o.upper.forEach(function (r) { L.push("• " + plain(r[0]) + ": " + fmt(r[2]) + " мм"); }); }
     L.push((o.totalLabel || "Итого по нормам") + " " + fmt(o.need) + " мм; " + o.haveLabel + " " + fmt(o.have) + " мм; " + (d < 0 ? "не хватает " + fmt(-d) : "запас " + fmt(d)) + " мм");
+    if (o.checks && o.checks.length) { L.push("Что проверить в проекте:"); o.checks.forEach(function (c) { L.push("• " + plain(c[1])); }); }
+    if (o.sizes && o.sizes.length) { L.push("Размеры, которые стоит заложить:"); o.sizes.forEach(function (x) { L.push("• " + plain(x)); }); }
     L.push("Ссылка на расчёт: " + shareLink());
     return L.join("\n").replace(/ /g, " ");
   }
@@ -986,34 +994,244 @@
     try { return JSON.parse(unb64(m[1])); } catch (e) { return null; }
   }
 
-  // ---------- Заявка в Яндекс Форму ----------
-  // Адрес формы и идентификаторы скрытых вопросов берутся из Яндекс Формы Ники (см. вики, nika-lead-magnet-plan).
-  // Имя, телефон, ник и обе галочки согласий заполняются в самой форме, сюда приходят только расчёт и площадка.
-  var YAFORM = { url: "https://forms.yandex.ru/u/6adbb08f9b79a59a86ff6573/", calc: "calc", source: "source" };
+  // ---------- Контакты, заявка в CRM и PDF с расчётом ----------
+  // Форма уходит в функцию бота в Yandex Cloud (bot-function/index.py): она кладёт заявку в CRM (Weeek), прячет PDF в закрытое
+  // хранилище и отдаёт короткий код. По коду бот @cherednikova_design_bot присылает PDF в Telegram: ссылка t.me/бот?start=код.
+  var BOT = { api: "https://functions.yandexcloud.net/d4e8c15gspv2q1nhjvqg", user: "cherednikova_design_bot" };
   var LAST = "";
   function source() {
     var s = ""; try { s = new URLSearchParams(location.search).get("src") || ""; } catch (e) {}
     var names = { tg: "Telegram-канал", ig: "Instagram: ManyChat", "ig-stories": "Instagram: сториз", "ig-bio": "Instagram: шапка профиля" };
     return names[s] || s || "прямая ссылка";
   }
-  var msgEl = document.getElementById("formmsg"), box = document.getElementById("yaform");
-  document.getElementById("leadBtn").addEventListener("click", function () {
-    if (!YAFORM.url) { msgEl.textContent = "Форма пока не подключена."; return; }
-    var q = new URLSearchParams();
-    q.set("iframe", "1");
-    q.set(YAFORM.calc, LAST);
-    q.set(YAFORM.source, source());
-    box.innerHTML = '<iframe title="Заявка на просчёт" loading="lazy" src="' + YAFORM.url.replace(/\/?$/, "/") + "?" + q.toString().replace(/&/g, "&amp;") + '"></iframe>';
-    msgEl.textContent = "";
-    this.textContent = "Обновить расчёт в заявке";
+  var leadForm = document.getElementById("leadForm"), leadMsg = document.getElementById("formmsg"), leadDone = document.getElementById("done"), pdfUrl = "";
+  function resetLead() {
+    leadForm.classList.remove("hidden"); leadDone.classList.add("hidden"); leadDone.innerHTML = "";
+    leadMsg.textContent = ""; document.getElementById("leadBtn").disabled = false;
+  }
+  // Одна кнопка: заявка уходит в CRM, и сразу открывается Telegram. Запасные ссылки остаются на странице на случай, если браузер не открыл Telegram сам.
+  function showDone(code) {
+    var tgUrl = "https://t.me/" + BOT.user + "?start=" + encodeURIComponent(code);
+    leadForm.classList.add("hidden");
+    leadDone.innerHTML = '<p><b>Заявка принята.</b> Telegram откроется сам. Если нет, <a href="' + tgUrl + '">откройте его здесь</a>.</p>' +
+      (pdfUrl ? '<p class="policy">Нет Telegram? <a href="' + pdfUrl + '" download="Расчёт хранения.pdf">Скачать PDF</a></p>' : "");
+    leadDone.classList.remove("hidden");
+    location.href = tgUrl;
+  }
+  leadForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var el = function (id) { return document.getElementById(id); };
+    var name = el("fName").value.trim(), digits = el("fPhone").value.replace(/[^\d ]/g, "").replace(/\s+/g, " ").trim(), nick = el("fTg").value.trim().replace(/^@+/, "");
+    var bad = !name ? [el("fName"), "Напишите, как к вам обращаться."]
+      : digits.replace(/ /g, "").length < 7 ? [el("fPhone"), "Проверьте номер телефона."]
+      : !/^[A-Za-z][A-Za-z0-9_]{4,31}$/.test(nick) ? [el("fTg"), "Ник в Telegram пишется латиницей, например @nika_design."]
+      : !el("fConsent").checked ? [el("fConsent"), "Без согласия на обработку данных заявку отправить не получится."] : null;
+    if (bad) { leadMsg.textContent = bad[1]; bad[0].focus(); return; }
+    var btn = el("leadBtn"); btn.disabled = true; leadMsg.textContent = "Готовлю расчёт…";
+    makePdf().catch(function () { return null; }).then(function (pdf) {
+      leadMsg.textContent = "Отправляю и открываю Telegram…";
+      return fetch(BOT.api, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({
+        name: name, phone: el("fCc").value + " " + digits, tg: "@" + nick, consent: true, news: el("fNews").checked,
+        calc: LAST, source: source(), pdf: pdf ? pdf.base64 : null }) })
+        .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then(function (d) { pdfUrl = pdf ? pdf.url : ""; showDone(d.code); });
+    }).catch(function () { btn.disabled = false; leadMsg.textContent = "Не получилось отправить. Попробуйте ещё раз."; });
   });
 
-  window.__calcOpen = function () {
-    OPEN = true; store("calcOpen", "1"); box.innerHTML = "";
-    render(); document.getElementById("after").scrollIntoView({ behavior: "smooth" });
-  };
+  // ---------- PDF с расчётом в стиле калькулятора ----------
+  // Библиотека jsPDF и шрифты (Montserrat и Oswald, только латиница и кириллица) лежат рядом со страницей и грузятся при отправке.
+  var pdfAssets = null;
+  function toB64(buf) { var b = new Uint8Array(buf), s = "", i; for (i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(s); }
+  function loadPdfAssets() {
+    if (pdfAssets) return pdfAssets;
+    var names = ["Montserrat-Light", "Montserrat-Regular", "Montserrat-SemiBold", "Oswald-Medium", "Oswald-SemiBold"];
+    var lib = window.jspdf ? Promise.resolve() : new Promise(function (ok, fail) {
+      var s = document.createElement("script"); s.src = "lib/jspdf.umd.min.js"; s.onload = ok; s.onerror = fail; document.head.appendChild(s);
+    });
+    pdfAssets = Promise.all([lib].concat(names.map(function (n) {
+      return fetch("fonts/" + n + ".ttf").then(function (r) { if (!r.ok) throw new Error(n); return r.arrayBuffer(); }).then(function (b) { return [n, toB64(b)]; });
+    }))).then(function (all) { var f = {}; all.slice(1).forEach(function (x) { f[x[0]] = x[1]; }); return f; });
+    pdfAssets.catch(function () { pdfAssets = null; });
+    return pdfAssets;
+  }
+  function svgToPng(markup, w, h) {
+    return new Promise(function (ok, fail) {
+      var img = new Image();
+      img.onload = function () {
+        var c = document.createElement("canvas"), k = 2.5; c.width = Math.round(w * k); c.height = Math.round(h * k);
+        var x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height);
+        ok({ data: c.toDataURL("image/png"), w: w, h: h });
+      };
+      img.onerror = fail;
+      img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(markup);
+    });
+  }
+  // Читаем уже нарисованный на странице результат: PDF всегда совпадает с тем, что видит человек.
+  function readResult() {
+    var res = document.getElementById("result"), t = function (n) { return n ? plain(n.textContent) : ""; };
+    return {
+      verdict: t(res.querySelector(".verdict")), good: !!res.querySelector(".verdict.good"), sub: t(res.querySelector(".sub")), note: t(res.querySelector(".note")),
+      svg: res.querySelector("svg.scheme"),
+      legend: [].map.call(res.querySelectorAll(".legend span"), function (s) {
+        var ic = s.querySelector("svg"), sq = s.querySelector("i");
+        return { icon: ic ? ic.innerHTML : "", color: sq ? sq.style.backgroundColor : "", name: plain(s.textContent) };
+      }),
+      rows: [].map.call(res.querySelectorAll("table tr"), function (tr) {
+        if (tr.classList.contains("head")) return { head: t(tr) };
+        var c = tr.cells[0].cloneNode(true), sm = c.querySelector("small"), small = sm ? plain(sm.textContent) : "";
+        if (sm) sm.remove();
+        return { total: tr.classList.contains("total"), name: plain(c.textContent), small: small, n: t(tr.cells[1]) };
+      }),
+      blocks: [].map.call(res.querySelectorAll("h3"), function (h) {
+        return { title: t(h), items: [].map.call(h.nextElementSibling.querySelectorAll("li"), function (li) { return { cls: li.className, text: plain(li.textContent) }; }) };
+      }),
+      unseenIntro: t(document.getElementById("unseenIntro")), unseen: [].map.call(document.querySelectorAll("#unseen li"), t),
+      sources: [].map.call(document.querySelectorAll(".sources li"), t)
+    };
+  }
+  function iconSvg(inner) {
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#2E3222" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' + inner + "</svg>";
+  }
+  function makePdf() {
+    return loadPdfAssets().then(function (F) {
+      var R = readResult(), vb = R.svg.viewBox.baseVal;
+      // Текст внутри картинки из SVG на iPhone не всегда рисуется, поэтому подписи схемы и легенды пишет сам jsPDF,
+      // а в картинки идут только фигуры и иконки. Две подписи схемы («место…» сверху, «нужно…» снизу) убираем из её копии.
+      var cl = R.svg.cloneNode(true), caps = [].map.call(cl.querySelectorAll('text[font-size="12"]'), function (t) {
+        var c = { text: plain(t.textContent), color: t.getAttribute("fill") || "#2E3222", x: parseFloat(t.getAttribute("x")) || 0, anchor: t.getAttribute("text-anchor") || "start" };
+        t.parentNode.removeChild(t);
+        return c;
+      });
+      var scheme = new XMLSerializer().serializeToString(cl).replace("<svg", '<svg width="' + vb.width + '" height="' + vb.height + '"');
+      var icons = R.legend.map(function (it) { return it.icon ? svgToPng(iconSvg(it.icon), 48, 48) : null; });
+      return Promise.all([svgToPng(scheme, vb.width, vb.height)].concat(icons)).then(function (img) { return drawPdf(F, R, img[0], img.slice(1), caps); });
+    });
+  }
+  function drawPdf(F, R, schemeImg, icons, caps) {
+    var doc = new window.jspdf.jsPDF({ unit: "pt", format: "a4", compress: true });
+    var FONTS = { MontL: "Montserrat-Light", Mont: "Montserrat-Regular", MontSB: "Montserrat-SemiBold", OswM: "Oswald-Medium", OswSB: "Oswald-SemiBold" };
+    Object.keys(FONTS).forEach(function (k) { doc.addFileToVFS(FONTS[k] + ".ttf", F[FONTS[k]]); doc.addFont(FONTS[k] + ".ttf", k, "normal"); });
+    var INK = "#2E3222", SOFT = "#6b6e62", BLUE = "#1D4870", TERRA = "#765231", LINE = "#e4e2dd";
+    var PW = 595.28, PH = 841.89, L = 44, RR = PW - 44, W = RR - L, TOP = 80, BOT = PH - 64, y = TOP;
+    function fnt(name, size, col, space) { doc.setFont(name, "normal"); doc.setFontSize(size); doc.setTextColor(col || INK); doc.setCharSpace(space || 0); }
+    function rule(yy, w, col, x1, x2) { doc.setDrawColor(col); doc.setLineWidth(w); doc.line(x1 || L, yy, x2 || RR, yy); }
+    function chrome() { fnt("Mont", 8.5, SOFT, 0.3); doc.text("Ника Чередникова", L, 38); doc.text("Калькулятор хранения", RR, 38, { align: "right" }); rule(46, 1.5, BLUE); }
+    function ensure(h) { if (y + h > BOT) { doc.addPage(); chrome(); y = TOP; } }
+    function lines(text, w) { return doc.splitTextToSize(text, w); }
+    function para(text, name, size, col, w, gap) {
+      fnt(name, size, col);
+      lines(text, w || W).forEach(function (ln) { ensure(size * 1.45); y += size * 1.1; doc.text(ln, L, y); y += size * 0.35; });
+      y += gap || 0;
+    }
+    function heading(text, size, col, gap) { fnt("OswSB", size, col, 0.3); ensure(size * 2); y += size * 1.05; doc.text(text.toUpperCase(), L, y); y += gap || size * 0.5; }
+    function image(img, maxH) {
+      var k = Math.min(W / img.w, maxH / img.h), w = img.w * k, h = img.h * k, x0 = L + (W - w) / 2;
+      ensure(h + 30); y += 12; doc.addImage(img.data, "PNG", x0, y, w, h);
+      var at = { x: x0, y: y, k: k, h: h };
+      y += h + 24;
+      return at;
+    }
 
-  // Вернулись после формы на основной странице: восстанавливаем введённое.
+    chrome();
+    var head = LAST.split("\n"), title = head[0], params = [];
+    for (var i = 1; i < head.length && !/^(•|Нижние модули:)/.test(head[i]); i++) params.push(head[i]);
+    fnt("OswSB", 36, INK, 0.4); doc.text("ВАШ РАСЧЁТ", L, y + 26);
+    fnt("OswSB", 36, BLUE, 0.4); doc.text(title.toUpperCase(), L, y + 64);
+    y += 64 + 16;
+    [0, 1, 2].forEach(function (k) { doc.setFillColor(BLUE); doc.circle(L + 3.5 + k * 11, y, 3.5, "F"); });
+    y += 12;
+    params.forEach(function (p) { para(p.replace(/(: |, )([А-ЯЁ])/g, function (m, a, b) { return a + b.toLowerCase(); }), "MontL", 10.5, INK, W, 1); });
+    y += 12; rule(y, 1.5, BLUE); y += 8;
+    heading(R.verdict, 22, R.good ? BLUE : TERRA, 8);
+    para(R.sub, "Mont", 10.5, INK, W, 6);
+    var at = image(schemeImg, 400);
+    caps.forEach(function (c, i) {
+      fnt("MontSB", 8.5, c.color);
+      doc.text(c.text, at.x + c.x * at.k, i === 0 ? at.y - 3 : at.y + at.h + 10, { align: c.anchor === "end" ? "right" : c.anchor === "middle" ? "center" : "left" });
+    });
+    if (R.legend.length) {
+      fnt("Mont", 9, SOFT);
+      var lp = [], lx = 0, lrow = 0;
+      R.legend.forEach(function (it) {
+        var iw = 16 + doc.getTextWidth(it.name) + 14;
+        if (lx > 0 && lx + iw > W) { lx = 0; lrow++; }
+        lp.push({ x: lx, row: lrow }); lx += iw;
+      });
+      ensure((lrow + 1) * 16 + 4);
+      R.legend.forEach(function (it, i) {
+        var px = L + lp[i].x, py = y + lp[i].row * 16;
+        if (icons[i]) doc.addImage(icons[i].data, "PNG", px, py, 11, 11);
+        else if (it.color) { var rgb = it.color.match(/\d+/g) || [204, 204, 204]; doc.setFillColor(+rgb[0], +rgb[1], +rgb[2]); doc.roundedRect(px, py + 1, 9, 9, 2, 2, "F"); }
+        fnt("Mont", 9, SOFT); doc.text(it.name, px + 16, py + 8.5);
+      });
+      y += (lrow + 1) * 16 + 2;
+    }
+    if (R.note) para(R.note, "MontL", 9.5, SOFT, W, 6);
+
+    // Таблица по отделениям
+    y += 4;
+    R.rows.forEach(function (r) {
+      if (r.head) { ensure(40); y += 12; fnt("OswM", 12, BLUE, 0.3); y += 12; doc.text(r.head.toUpperCase(), L, y); y += 8; return; }
+      fnt("Mont", 10.5, INK);
+      var nm = lines(r.name, W - 96), sm = r.small ? (fnt("MontL", 8.5, SOFT), lines(r.small, W - 96)) : [], h = 8 + nm.length * 14 + sm.length * 11.5 + 5;
+      ensure(h); rule(y, r.total ? 1.4 : 0.5, r.total ? INK : LINE);
+      var yy = y + 8;
+      fnt(r.total ? "MontSB" : "Mont", 10.5, INK); nm.forEach(function (ln) { yy += 11; doc.text(ln, L, yy); yy += 3; });
+      fnt("MontL", 8.5, SOFT); sm.forEach(function (ln) { yy += 9; doc.text(ln, L, yy); yy += 2.5; });
+      fnt("MontSB", 10.5, INK); doc.text(r.n, RR, y + 19, { align: "right" });
+      y += h;
+    });
+
+    // Что проверить и размеры
+    R.blocks.forEach(function (b) {
+      y += 14; heading(b.title, 14, INK, 6);
+      b.items.forEach(function (it) {
+        fnt("Mont", 10.5, INK);
+        var pad = it.cls ? 28 : 2, ln = lines(it.text, W - pad - 2), h = 8 + ln.length * 14 + 3;
+        ensure(h); rule(y, 0.5, LINE);
+        if (it.cls === "ok") { doc.setDrawColor(BLUE); doc.setLineWidth(1.3); doc.lines([[3, 3.2], [6.5, -8]], L + 3, y + 17, [1, 1], "S"); }
+        else if (it.cls === "warn") { fnt("MontSB", 11, TERRA); doc.text("!", L + 6, y + 19); }
+        fnt("Mont", 10.5, INK);
+        ln.forEach(function (t, k) { doc.text(t, L + pad, y + 19 + k * 14); });
+        y += h;
+      });
+    });
+
+    // Синий блок «Что калькулятор не увидит»
+    var BW = W - 36, CLOSE = "Такие мелочи лучше обсудить до того, как заказывать мебель. Давайте сделаем это на созвоне: расскажете, что храните и что не устраивает сейчас, а я посмотрю ваш расчёт и подскажу, с чего начать.";
+    fnt("Mont", 10.5, "#e3eaf1");
+    var intro = lines(R.unseenIntro, BW), items = R.unseen.map(function (s) { return lines(s, BW - 14); }), close = lines(CLOSE, BW);
+    var bh = 22 + 24 + intro.length * 14.5 + 6 + items.reduce(function (a, l) { return a + l.length * 14.5 + 3; }, 0) + 8 + close.length * 14.5 + 18 + 36 + 22;
+    y += 26; ensure(bh);
+    doc.setFillColor(BLUE); doc.roundedRect(L, y, W, bh, 10, 10, "F");
+    var by = y + 22, bx = L + 18;
+    fnt("OswSB", 16, "#FFFFFF", 0.3); by += 16; doc.text("ЧТО КАЛЬКУЛЯТОР НЕ УВИДИТ", bx, by); by += 10;
+    fnt("Mont", 10.5, "#e3eaf1");
+    intro.forEach(function (t) { by += 14.5; doc.text(t, bx, by); }); by += 6;
+    items.forEach(function (l) { l.forEach(function (t, k) { by += 14.5; if (k === 0) doc.text("•", bx, by); doc.text(t, bx + 14, by); }); by += 3; });
+    by += 8; close.forEach(function (t) { by += 14.5; doc.text(t, bx, by); }); by += 18;
+    doc.setFillColor("#FFFFFF"); doc.roundedRect(bx, by, BW, 36, 9, 9, "F");
+    fnt("OswM", 13, BLUE, 0.4); doc.text("НАПИСАТЬ НИКЕ В TELEGRAM: @NIKACAGE", bx + BW / 2, by + 23, { align: "center" });
+    doc.link(bx, by, BW, 36, { url: "https://t.me/NikaCage" });
+    y += bh + 8;
+
+    // Источники
+    if (R.sources.length) { y += 10; para("Источники: " + R.sources.join(" "), "MontL", 8, SOFT, W, 0); }
+
+    // Колонтитул на каждой странице
+    var n = doc.getNumberOfPages();
+    for (var p = 1; p <= n; p++) {
+      doc.setPage(p); rule(PH - 44, 1.5, BLUE);
+      fnt("Mont", 8.5, SOFT, 0.3); doc.text("@cherednikova.design", L, PH - 30);
+      var lt = "Написать Нике: @NikaCage"; doc.text(lt, RR, PH - 30, { align: "right" });
+      doc.link(RR - doc.getTextWidth(lt), PH - 40, doc.getTextWidth(lt), 14, { url: "https://t.me/NikaCage" });
+      if (n > 1) { doc.text(p + " / " + n, PW / 2, PH - 30, { align: "center" }); }
+    }
+    doc.setProperties({ title: "Расчёт хранения. Ника Чередникова", author: "Ника Чередникова", creator: "Калькулятор хранения" });
+    return { base64: toB64(doc.output("arraybuffer")), url: URL.createObjectURL(doc.output("blob")), doc: doc };
+  }
+
+  // Восстанавливаем введённое после перезагрузки страницы или по ссылке на расчёт.
   var saved = null; try { saved = JSON.parse(load("calcState") || "null"); } catch (e) {}
   var fromLink = readLink(); if (fromLink) saved = fromLink;
   if (saved && saved.type && TYPES.some(function (t) { return t.id === saved.type; })) {
@@ -1021,9 +1239,7 @@
     typesBox.querySelectorAll(".type").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.id === S.type ? "true" : "false"); });
     document.getElementById("work").classList.remove("hidden");
     buildPlace(); buildPeople(); buildItems(); render();
-    if (OK) document.getElementById("result").scrollIntoView();
   }
-  if (OK) { try { history.replaceState(null, "", location.pathname); } catch (e) {} }
 })();
 </script>
 </body>
