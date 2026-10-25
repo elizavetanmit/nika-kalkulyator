@@ -480,6 +480,7 @@
     var P = S.place, k = S.kitchen, mods = [];
     var burners = HOB[k.burners] ? k.burners : 4, hobW = HOB[burners];
     var cookW = k.oven === "under" ? Math.max(hobW, 600) : hobW;
+    var hoodW = hobW > 450 ? 600 : 450; // вытяжки беру 450 или 600 мм
     if (k.fridge) mods.push(["fridge", "Холодильник", k.fridge]);
     mods.push(["sink", k.sink > 600 ? "Мойка с крылом" : "Мойка", k.sink]);
     if (k.dw) mods.push(["dw", "Посудомойка", k.dw]);
@@ -506,11 +507,11 @@
     var tall = 0, sinkW = 0;
     mods.forEach(function (m) { if (m[0] === "fridge" || m[0] === "oven") tall += m[2]; if (m[0] === "sink") sinkW = m[2]; });
     var tallText = k.fridge && k.oven === "column" ? "над холодильником и пеналом не считаю: они в полную высоту" : k.fridge ? "над холодильником не считаю: он в полную высоту" : "над пеналом не считаю: он в полную высоту";
-    var cabW = Math.max(0, have - tall - sinkW - cookW);
+    var cabW = Math.max(0, have - tall - sinkW - hoodW);
     out.totalLabel = "Итого нижних модулей";
     out.upper = [
       ["Шкаф с сушкой над мойкой", "сушилка для посуды встраивается в шкаф", sinkW],
-      ["Вытяжка над варочной", "не уже варочной панели", cookW],
+      ["Вытяжка над варочной", "не уже варочной панели, 450 или 600 мм", hoodW],
       ["Верхние шкафы для посуды и продуктов", "глубина 300–350 мм, " + (tall ? tallText : "по всей остальной стене"), cabW]
     ];
     if (k.layout === "corner") out.note = "Угол считается один раз: из суммы стен вычитаю 600 мм глубины столешницы. Угловой шкаф занимает 1 000–1 200 мм.";
@@ -525,7 +526,7 @@
     ];
     var rest = have - need;
     if (rest >= 0) out.checks.unshift(["ok", "После техники и рабочих зон остаётся " + mm(rest) + " фронта под нижние шкафы для посуды и продуктов."]);
-    out.scheme = kitchenStrip(mods, have);
+    out.scheme = kitchenStrip(mods, have, hoodW);
   }
 
 
@@ -564,21 +565,26 @@
 
   // Кухня: нижний ряд модулей, над ним верхний; холодильник и пенал в полную высоту.
   var KCOL = { fridge: "#c5d3e1", oven: "#c5d3e1", sink: "#e2e9f0", dw: "#f1f0ee", work: "#ebe6df", cook: "#d9c8b6", side: "#e7ded2", cab: "#f3efe9", dryer: "#b9cadb", hood: "#a98e72" };
-  function kitchenStrip(mods, have) {
+  function kitchenStrip(mods, have, hoodW) {
     var need = mods.reduce(function (a, m) { return a + m[2]; }, 0), maxW = Math.max(have, need);
     var pad = 6, T = 20, VW = 640, k = (VW - 2 * pad) / maxW, upH = 56, gap = 40, lowH = 110, yLow = T + upH + gap, VH = yLow + lowH + 24, g = [], x = 0;
     function box(x0, y, w, h, f, line) { return '<rect x="' + (pad + x0 * k).toFixed(1) + '" y="' + y + '" width="' + (w * k).toFixed(1) + '" height="' + h + '" fill="' + f + '" ' + (line ? 'stroke="#cfc9bf" stroke-width="1"' : 'stroke="#FFFFFF" stroke-width="2"') + '/>'; }
     function num(x0, w, y, h) { var cx = pad + (x0 + w / 2) * k; return w * k > 34 ? '<text x="' + cx.toFixed(1) + '" y="' + (y + h / 2 + 4) + '" font-size="12" text-anchor="middle" fill="#2E3222" font-family="Montserrat, sans-serif" transform="rotate(-90 ' + cx.toFixed(1) + ' ' + (y + h / 2) + ')">' + fmt(w) + '</text>' : ''; }
+    // ux — где кончается верхний ряд: вытяжка бывает шире модуля под варочной и заходит на соседний верхний шкаф.
+    var ux = 0;
     mods.forEach(function (m) {
       if (m[0] === "fridge" || m[0] === "oven") {
         g.push(box(x, T, m[2], yLow + lowH - T, KCOL[m[0]])); g.push(num(x, m[2], yLow, lowH));
+        ux = x + m[2];
       } else {
         g.push(box(x, yLow, m[2], lowH, KCOL[m[0]])); g.push(num(x, m[2], yLow, lowH));
-        g.push(box(x, T, m[2], upH, KCOL[m[0] === "sink" ? "dryer" : m[0] === "cook" ? "hood" : "cab"], true)); g.push(num(x, m[2], T, upH));
+        var start = Math.max(ux, x), w = m[0] === "cook" ? hoodW : x + m[2] - start;
+        if (w > 0) { g.push(box(start, T, w, upH, KCOL[m[0] === "sink" ? "dryer" : m[0] === "cook" ? "hood" : "cab"], true)); g.push(num(start, w, T, upH)); }
+        ux = Math.max(ux, start + Math.max(0, w));
       }
       x += m[2];
     });
-    if (have > need) { g.push(box(need, T, have - need, upH, KCOL.cab, true)); g.push(num(need, have - need, T, upH)); }
+    if (have > ux) { g.push(box(ux, T, have - ux, upH, KCOL.cab, true)); g.push(num(ux, have - ux, T, upH)); }
     var over = need > have, col = over ? "#765231" : "#1D4870";
     g.push('<rect x="' + pad + '" y="' + T + '" width="' + (have * k).toFixed(1) + '" height="' + (yLow + lowH - T) + '" fill="none" stroke="' + col + '" stroke-width="3" stroke-dasharray="8 5"/>');
     g.push(label(pad + have * k, 13, "стена " + fmt(have), col, "end"));
