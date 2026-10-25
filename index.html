@@ -35,7 +35,8 @@
   h2 { font-size: 22px; margin: 0; text-transform: uppercase; }
   .hint { font-size: 14px; color: var(--ink-soft); margin: 0 0 14px; }
   .types { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-  @media (min-width: 560px) { .types { grid-template-columns: repeat(3, 1fr); } }
+  .types .type:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  @media (min-width: 560px) { .types { grid-template-columns: repeat(3, 1fr); } .types .type:last-child:nth-child(odd) { grid-column: auto; } }
   .type { text-align: left; background: var(--white); border: 1.5px solid var(--line); border-radius: 12px; padding: 12px 12px 14px; cursor: pointer; font: inherit; color: var(--ink); }
   .type svg { display: block; width: 44px; height: 44px; margin-bottom: 8px; }
   .type b { display: block; font-family: "Oswald", sans-serif; font-weight: 500; font-size: 17px; text-transform: uppercase; line-height: 1.15; }
@@ -110,7 +111,7 @@
   <div class="frame"><span>Ника Чередникова</span><span>Калькулятор хранения</span></div>
   <h1>Сколько мебели <span class="acc">вам нужно</span>?</h1>
   <div class="dots" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-  <p class="lead">Выберите, что проектируете, впишите размеры места и посчитайте вещи. Я переведу их в миллиметры штанги, полок и модулей по ГОСТ 13025.1-85 и справочнику Нойферта.</p>
+  <p class="lead">Выберите, что проектируете, впишите размеры места и посчитайте вещи. Я переведу их в миллиметры штанги, полок и модулей.</p>
 
   <section class="step">
     <div class="stephead"><span class="num">01</span><h2>Что проектируем</h2></div>
@@ -144,7 +145,7 @@
       <h2>Что калькулятор не увидит</h2>
       <p>Он считает по нормам, но не знает вашу квартиру. А мебель чаще всего не встаёт как раз из-за неё:</p>
       <ul id="unseen"></ul>
-      <p>Такие мелочи лучше обсудить до того, как заказывать мебель. Можем сделать это на созвоне: запись чуть ниже.</p>
+      <p>Такие мелочи лучше обсудить до того, как заказывать мебель. Можем сделать это на созвоне.</p>
       <p class="hidden" id="sent"><b>Ваша заявка уже у нас:</b> напишу вам в мессенджер, и договоримся о созвоне.</p>
     </section>
 
@@ -217,10 +218,7 @@
   var ICON = {
     hall: '<rect x="8" y="4" width="28" height="36" rx="1"/><line x1="22" y1="4" x2="22" y2="40"/><line x1="10" y1="12" x2="20" y2="12"/><path d="M12 12v14h6V12"/><line x1="24" y1="32" x2="34" y2="32"/>',
     bed: '<rect x="6" y="4" width="32" height="36" rx="1"/><line x1="17" y1="4" x2="17" y2="40"/><line x1="28" y1="4" x2="28" y2="40"/><line x1="8" y1="12" x2="15" y2="12"/><line x1="30" y1="14" x2="36" y2="14"/><line x1="30" y1="22" x2="36" y2="22"/><line x1="30" y1="30" x2="36" y2="30"/>',
-    walk: '<path d="M6 40V6h32v34"/><line x1="12" y1="6" x2="12" y2="40"/><line x1="32" y1="6" x2="32" y2="40"/><line x1="12" y1="14" x2="32" y2="14"/>',
-    kids: '<rect x="10" y="10" width="24" height="30" rx="1"/><line x1="22" y1="10" x2="22" y2="40"/><circle cx="16" cy="6" r="3"/><line x1="24" y1="18" x2="32" y2="18"/><line x1="24" y1="26" x2="32" y2="26"/>',
-    kitchen: '<rect x="4" y="22" width="36" height="18" rx="1"/><rect x="6" y="6" width="32" height="10" rx="1"/><circle cx="14" cy="22" r="0.5"/><line x1="16" y1="22" x2="16" y2="40"/><line x1="28" y1="22" x2="28" y2="40"/><circle cx="34" cy="20" r="2"/>',
-    utility: '<rect x="6" y="6" width="14" height="34" rx="1"/><circle cx="13" cy="30" r="5"/><rect x="24" y="6" width="14" height="34" rx="1"/><line x1="31" y1="10" x2="31" y2="36"/>'
+    kitchen: '<rect x="4" y="22" width="36" height="18" rx="1"/><rect x="6" y="6" width="32" height="10" rx="1"/><circle cx="14" cy="22" r="0.5"/><line x1="16" y1="22" x2="16" y2="40"/><line x1="28" y1="22" x2="28" y2="40"/><circle cx="34" cy="20" r="2"/>'
   };
 
   var TYPES = [
@@ -228,16 +226,10 @@
       per: { a: { coats: 3, shoes: 4, boots: 1, hats: 2 }, c: { coats: 2, shoes: 3, boots: 1, hats: 2 } }, place: { W: 1200, H: 2600, D: 600 } },
     { id: "bed", name: "Шкаф в спальню", sub: "одежда, бельё, постельное", items: ["dress", "hang", "thin", "thick", "linen", "towels", "bedding"],
       per: { a: { dress: 2, hang: 15, thin: 20, thick: 10, linen: 1.5, towels: 3, bedding: 0.5 }, c: {} }, place: { W: 2400, H: 2600, D: 600 } },
-    { id: "walk", name: "Гардеробная", sub: "отдельная комната под одежду и обувь", items: ["dress", "hang", "thin", "thick", "shoes", "boots"],
-      per: { a: { dress: 3, hang: 20, thin: 20, thick: 12, shoes: 6, boots: 2 }, c: { hang: 8, thin: 15, thick: 8, shoes: 3, boots: 1 } }, place: { RW: 2000, RL: 2000, H: 2600 } },
-    { id: "kids", name: "Детский шкаф", sub: "вещи одного или нескольких детей", items: ["hang", "thin", "thick", "linen"],
-      per: { a: {}, c: { hang: 12, thin: 20, thick: 12, linen: 2 } }, place: { W: 1200, H: 2600, D: 600 } },
-    { id: "kitchen", name: "Кухня", sub: "фронт с техникой, мойкой и рабочей зоной", place: { A: 3000, B: 2000, H: 2700 } },
-    { id: "utility", name: "Хозблок", sub: "стиральная машина, глажка, уборка", place: { W: 1500, H: 2600 } }
+    { id: "kitchen", name: "Кухня", sub: "фронт с техникой, мойкой и рабочей зоной", place: { A: 3000, B: 2000, H: 2700 } }
   ];
 
-  var S = { type: null, adults: 2, kids: 0, touched: {}, counts: {}, place: {}, kitchen: { layout: "line", hob: "electric", fridge: 600, oven: "under", dw: 450, sink: 600, cook: 600 },
-            util: { machines: true, sink: false, bin: false, surface: false, iron: true, small: true, mop: true }, walk: "two" };
+  var S = { type: null, adults: 2, kids: 0, touched: {}, counts: {}, place: {}, kitchen: { layout: "line", hob: "electric", fridge: 600, oven: "under", dw: 450, sink: 600, cook: 600 } };
 
   var T = function () { return TYPES.filter(function (t) { return t.id === S.type; })[0]; };
 
@@ -255,8 +247,7 @@
     S.type = id; S.touched = {}; S.counts = {};
     var t = T();
     S.place = JSON.parse(JSON.stringify(t.place));
-    if (id === "kids") { S.adults = 0; S.kids = Math.max(1, S.kids || 1); }
-    else if (S.adults === 0) { S.adults = 2; }
+    if (S.adults === 0) { S.adults = 2; }
     typesBox.querySelectorAll(".type").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.id === id ? "true" : "false"); });
     document.getElementById("work").classList.remove("hidden");
     defaults(); buildPlace(); buildPeople(); buildItems(); render();
@@ -285,26 +276,16 @@
     var id = S.type, html = "", extra = "", hint = "", title = "Место";
     var place = document.getElementById("place");
     place.className = "fields";
-    if (id === "hall" || id === "bed" || id === "kids") {
+    if (id === "hall" || id === "bed") {
       title = "Место под шкаф";
-      hint = "Глубину считайте до внутренней стороны дверей: так её меряет ГОСТ.";
+      hint = "Глубину считайте до внутренней стороны дверей.";
       html = field("W", "Ширина", 400, 8000) + field("H", "Высота", 1000, 3500) + field("D", "Глубина", 200, 1200);
-    } else if (id === "walk") {
-      title = "Комната под гардеробную";
-      hint = "Длина считается от стены с дверью до противоположной стены.";
-      extra = seg("walk", [["one", "Вдоль одной стены"], ["two", "Вдоль двух стен"], ["u", "Буквой П"]], S.walk);
-      html = field("RW", "Ширина", 800, 8000) + field("RL", "Длина", 800, 8000) + field("H", "Высота", 1000, 3500);
     } else if (id === "kitchen") {
       title = "Стены под кухню";
       hint = "Длина стен, вдоль которых встанет кухня. Для угловой кухни нужны обе.";
       extra = seg("layout", [["line", "Прямая"], ["corner", "Угловая"]], S.kitchen.layout);
       html = field("A", "Стена 1", 1000, 9000) + (S.kitchen.layout === "corner" ? field("B", "Стена 2", 600, 9000) : "") + field("H", "Потолок", 2000, 4000);
       if (S.kitchen.layout !== "corner") place.className = "fields two";
-    } else if (id === "utility") {
-      title = "Место под хозблок";
-      hint = "Длина стены или ниши, вдоль которой встанут техника и шкафы.";
-      html = field("W", "Длина", 400, 8000) + field("H", "Высота", 1000, 3500);
-      place.className = "fields two";
     }
     document.getElementById("placeTitle").textContent = title;
     document.getElementById("placeHint").textContent = hint;
@@ -316,7 +297,6 @@
     document.querySelectorAll("#placeExtra .seg button").forEach(function (b) {
       b.onclick = function () {
         var name = b.parentNode.dataset.seg;
-        if (name === "walk") S.walk = b.dataset.v;
         if (name === "layout") S.kitchen.layout = b.dataset.v;
         buildPlace(); render();
       };
@@ -340,12 +320,12 @@
     box.innerHTML = "";
     if (!t.items) { step.classList.add("hidden"); return; }
     step.classList.remove("hidden");
-    var who = S.type === "kids" ? [["kids", "Дети"]] : [["adults", "Взрослые"], ["kids", "Дети"]];
+    var who = [["adults", "Взрослые"], ["kids", "Дети"]];
     who.forEach(function (w) {
       var r = document.createElement("div"); r.className = "row";
       r.innerHTML = '<span class="name">' + w[1] + '</span>';
       r.appendChild(stepper(w[0], function () { return S[w[0]]; }, function (v) {
-        S[w[0]] = (S.type === "kids" && w[0] === "kids") ? Math.max(1, v) : v;
+        S[w[0]] = v;
         defaults(); itemSteppers.forEach(function (s) { s._sync(); });
       }, 8));
       box.appendChild(r);
@@ -361,14 +341,13 @@
       document.getElementById("itemsHint").textContent = "Цифры стоят примерные. Поправьте те, что знаете точно.";
       t.items.forEach(function (k) {
         var r = document.createElement("div"); r.className = "row";
-        var sub = (S.type === "kids" && k === "hang") ? "платья, рубашки, школьная форма, брюки" : ITEM[k][1];
-        r.innerHTML = '<span class="name">' + ITEM[k][0] + '<small>' + sub + '</small></span>';
+        r.innerHTML = '<span class="name">' + ITEM[k][0] + '<small>' + ITEM[k][1] + '</small></span>';
         var st = stepper(k, function () { return S.counts[k] || 0; }, function (v) { S.counts[k] = v; S.touched[k] = true; }, 300);
         itemSteppers.push(st); r.appendChild(st); box.appendChild(r);
       });
     } else if (S.type === "kitchen") {
       document.getElementById("itemsTitle").textContent = "Техника и мойка";
-      document.getElementById("itemsHint").textContent = "Выберите, что встанет в кухню. Ширины модулей по Нойферту.";
+      document.getElementById("itemsHint").textContent = "Выберите, что встанет в кухню.";
       var k = S.kitchen;
       box.innerHTML =
         '<div class="fields two">' +
@@ -382,14 +361,6 @@
       box.querySelectorAll("select").forEach(function (s) {
         s.onchange = function () { var v = s.value; k[s.dataset.k] = isNaN(+v) ? v : +v; render(); };
       });
-    } else if (S.type === "utility") {
-      document.getElementById("itemsTitle").textContent = "Что поставить";
-      document.getElementById("itemsHint").textContent = "Отметьте, что должно поместиться. Ширины по таблице Нойферта.";
-      var U = UTIL;
-      box.innerHTML = U.map(function (u) {
-        return '<label class="check"><input type="checkbox" data-u="' + u.k + '"' + (S.util[u.k] ? " checked" : "") + '><span>' + u.name + '<small>' + u.sub + '</small></span></label>';
-      }).join("");
-      box.querySelectorAll("input").forEach(function (c) { c.onchange = function () { S.util[c.dataset.u] = c.checked; render(); }; });
     }
   }
   function sel(key, label, opts, cur) {
@@ -397,16 +368,6 @@
       return '<option value="' + o[0] + '"' + (String(o[0]) === String(cur) ? " selected" : "") + '>' + o[1] + '</option>';
     }).join("") + '</select></label>';
   }
-
-  var UTIL = [
-    { k: "machines", name: "Стиральная и сушильная машина в колонну", sub: "600 мм", min: 600, best: 600, label: "Стирка и сушка" },
-    { k: "sink", name: "Раковина", sub: "600 мм", min: 600, best: 600, label: "Раковина" },
-    { k: "bin", name: "Бак для грязного белья", sub: "500 мм, удобнее 600", min: 500, best: 600, label: "Бак для белья" },
-    { k: "surface", name: "Поверхность, чтобы разложить бельё", sub: "600 мм, удобнее 1 200", min: 600, best: 1200, label: "Раскладка белья" },
-    { k: "iron", name: "Шкаф с откидной гладильной доской", sub: "450 мм", min: 450, best: 450, label: "Глажка" },
-    { k: "small", name: "Шкаф для пылесоса и утюга", sub: "500 мм, удобнее 600", min: 500, best: 600, label: "Пылесос, утюг" },
-    { k: "mop", name: "Шкаф для швабры и щёток", sub: "600 мм", min: 600, best: 600, label: "Швабра" }
-  ];
 
   // ---------- Расчёт шкафов ----------
   function wardrobe(W, H, D, c, opt) {
@@ -468,59 +429,39 @@
   function checksWardrobe(r, c, type) {
     var k = [];
     var hasCoats = (c.coats || 0) > 0;
-    if (type !== "walk") {
-      if (r.D < N.depthLight) k.push(["warn", "Глубина " + mm(r.D) + ": вешалки поперёк не встанут. Нужна торцевая выдвижная штанга."]);
-      else if (r.D < N.depthGost) k.push(["warn", "Глубина " + mm(r.D) + " меньше 560 мм по ГОСТ. Рубашки и лёгкие платья встанут, " + (hasCoats ? "пальто и пуховики будут упираться в двери." : "объёмные вещи будут упираться в двери.")]);
-      else if (hasCoats && r.D < N.depthCoat) k.push(["warn", "Глубина " + mm(r.D) + " проходит по ГОСТ, но для пуховиков и шуб я закладываю 700 мм."]);
-      else k.push(["ok", "Глубина " + mm(r.D) + " подходит для одежды на плечиках."]);
-    }
+    if (r.D < N.depthLight) k.push(["warn", "Глубина " + mm(r.D) + ": вешалки поперёк не встанут. Нужна торцевая выдвижная штанга."]);
+    else if (r.D < N.depthGost) k.push(["warn", "Глубина " + mm(r.D) + ": рубашки и лёгкие платья встанут, " + (hasCoats ? "пальто и пуховики будут упираться в двери." : "объёмные вещи будут упираться в двери.") + " Для одежды на плечиках я закладываю от 560 мм."]);
+    else if (hasCoats && r.D < N.depthCoat) k.push(["warn", "Глубина " + mm(r.D) + ": для обычной одежды хватит, но для пуховиков и шуб я закладываю 700 мм."]);
+    else k.push(["ok", "Глубина " + mm(r.D) + " подходит для одежды на плечиках."]);
     if (r.longW && r.rodTop < r.longZone) k.push(["warn", "При высоте " + mm(r.H) + " длинное отделение " + mm(r.longZone) + " не помещается под штангой."]);
-    k.push(["ok", "Штангу ставьте не выше 1 900 мм от пола. Выше можно только с опускающейся штангой (ГОСТ, п. 2.3)."]);
+    k.push(["ok", "Штангу ставьте не выше 1 900 мм от пола. Выше можно только с опускающейся штангой."]);
     if (type === "hall") {
       if (r.hats) {
-        if (r.topH < N.hatShelf) k.push(["warn", "Над штангой нет места под полку для головных уборов: ГОСТ требует отделение высотой от 170 мм и глубиной от 240 мм."]);
-        else k.push([r.hatCap >= r.hats ? "ok" : "warn", "На полках над штангой поместится примерно " + pl(r.hatCap, "головной убор", "головных убора", "головных уборов") + " из " + r.hats + ". Глубина полки от 240 мм (ГОСТ, п. 2.2)."]);
+        if (r.topH < N.hatShelf) k.push(["warn", "Над штангой нет места под полку для головных уборов: ей нужно от 170 мм по высоте и от 240 мм в глубину."]);
+        else k.push([r.hatCap >= r.hats ? "ok" : "warn", "На полках над штангой поместится примерно " + pl(r.hatCap, "головной убор", "головных убора", "головных уборов") + " из " + r.hats + ". Глубина полки от 240 мм."]);
       }
-      k.push(["ok", "Отделение для обуви: от 320 мм глубиной, для туфель от 150 мм высотой, для сапог от 400 мм (ГОСТ, табл. 5)."]);
+      k.push(["ok", "Отделение для обуви: от 320 мм глубиной, для туфель от 150 мм высотой, для сапог от 400 мм."]);
     }
-    if (type === "bed" || type === "kids") {
-      if (c.linen) k.push(["ok", "Отделение под постельное бельё: 400 мм шириной и 460 мм глубиной или наоборот, смотря как класть стопки (ГОСТ, табл. 1)."]);
-      k.push(["ok", "Ящики для белья и носков: верх верхнего ящика не выше 1 250 мм от пола (ГОСТ, п. 7)."]);
+    if (type === "bed") {
+      if (c.linen) k.push(["ok", "Отделение под постельное бельё: 400 мм шириной и 460 мм глубиной или наоборот, смотря как класть стопки."]);
+      k.push(["ok", "Ящики для белья и носков: верх верхнего ящика не выше 1 250 мм от пола."]);
       if (c.bedding) {
-        if (r.topH > 0) k.push([r.topVol >= c.bedding * N.bedding ? "ok" : "warn", "Антресоль даёт около " + r.topVol.toFixed(2).replace(".", ",") + " м³, одеялам и подушкам нужно " + (c.bedding * N.bedding).toFixed(2).replace(".", ",") + " м³ (ГОСТ, п. 4)."]);
+        if (r.topH > 0) k.push([r.topVol >= c.bedding * N.bedding ? "ok" : "warn", "Антресоль даёт около " + r.topVol.toFixed(2).replace(".", ",") + " м³, одеялам и подушкам нужно " + (c.bedding * N.bedding).toFixed(2).replace(".", ",") + " м³."]);
         else k.push(["warn", "Антресоли нет. Одеялам и подушкам нужно " + (c.bedding * N.bedding).toFixed(2).replace(".", ",") + " м³, найдите им место заранее."]);
       }
     }
-    if (type === "kids") k.push(["ok", "Ребёнок растёт: заложите штангу и полки так, чтобы их можно было переставить по высоте."]);
     if (r.topH > 0 && type !== "hall") k.push(["ok", "Над штангой остаётся " + mm(r.topH) + " под антресоль: туда без стремянки не дотянуться, это место для редких вещей."]);
     return k;
   }
 
   function calc() {
     var t = T(), P = S.place, c = S.counts, out = { rows: [], checks: [], label: "", have: 0, need: 0 };
-    if (S.type === "hall" || S.type === "bed" || S.type === "kids") {
+    if (S.type === "hall" || S.type === "bed") {
       var r = wardrobe(P.W, P.H, P.D, c);
       out.have = P.W; out.need = r.need; out.rows = rowsWardrobe(r, c); out.checks = checksWardrobe(r, c, S.type);
       out.scheme = elevation(r, P.W, P.H, "место"); out.haveLabel = "место под шкаф";
-    } else if (S.type === "walk") {
-      var rw = P.RW, rl = P.RL, lay = S.walk, run, minW;
-      if (lay === "one") { run = rl; minW = N.walkDepth + N.walkPass; }
-      else if (lay === "two") { run = 2 * rl; minW = 2 * N.walkDepth + N.walkPass; }
-      else { run = 2 * rl + Math.max(0, rw - 2 * N.walkDepth); minW = 2 * N.walkDepth + N.walkPass; }
-      var r2 = wardrobe(run, P.H, N.walkDepth, c);
-      out.have = run; out.need = r2.need; out.rows = rowsWardrobe(r2, c);
-      var pass = lay === "one" ? rw - N.walkDepth : rw - 2 * N.walkDepth;
-      out.checks = [];
-      out.checks.push([pass >= N.walkPass ? "ok" : "warn", "Проход между шкафами " + mm(Math.max(0, pass)) + ". У Нойферта шкафы гардеробной по 550 мм, проход между ними 900 мм" + (pass >= N.walkPass ? "." : ": для этой расстановки ширина комнаты нужна от " + mm(minW) + ".")]);
-      if (lay === "u" && rl < N.walkDepth + N.walkPass) out.checks.push(["warn", "При П-образной расстановке длина комнаты нужна от " + mm(N.walkDepth + N.walkPass) + ", иначе к дальней стене не подойти."]);
-      out.checks.push([pass >= N.dressArea ? "ok" : "warn", pass >= N.dressArea ? "Места хватает, чтобы переодеваться внутри: у Нойферта на это закладывают 1 500 мм." : "Переодеваться внутри будет тесно: у Нойферта на место для переодевания закладывают 1 500 мм."]);
-      out.checks = out.checks.concat(checksWardrobe(r2, c, "walk"));
-      out.scheme = elevation(r2, run, P.H, "стены"); out.haveLabel = "длина стен под шкафы";
-      out.note = "Схема показывает стены гардеробной развёрнутыми в одну линию.";
     } else if (S.type === "kitchen") {
       kitchen(out);
-    } else if (S.type === "utility") {
-      utility(out);
     }
     return out;
   }
@@ -540,36 +481,23 @@
     out.rows = mods.map(function (m) { return [m[1], kitchenNote(m[0]), m[2]]; });
     var rest = have - need;
     out.rest = rest;
-    if (k.layout === "corner") out.note = "Угол считается один раз: из суммы стен вычитаю 600 мм глубины столешницы. Угловой шкаф у Нойферта занимает 1 000–1 200 мм.";
+    if (k.layout === "corner") out.note = "Угол считается один раз: из суммы стен вычитаю 600 мм глубины столешницы. Угловой шкаф занимает 1 000–1 200 мм.";
     var gas = k.hob === "gas";
     out.checks = [
-      ["ok", "Столешница на высоте 850–900 мм от пола (ГОСТ, табл. 6), глубина 600 мм."],
-      ["ok", "Цоколь от 80 мм высотой и утоплен от фасада хотя бы на 50 мм, чтобы не бить ноги (ГОСТ, табл. 6)."],
-      ["ok", "Верхние шкафы внутри от 270 мм глубиной (ГОСТ), у Нойферта 320–350 мм. От столешницы до них не меньше 500 мм."],
-      ["ok", "Вытяжка над " + (gas ? "газовой плитой не ниже 650 мм" : "электрической плитой не ниже 450 мм") + " от варочной поверхности (Нойферт)."],
-      ["ok", "Верхняя полка, до которой тянутся каждый день, не выше 1 900 мм. Выше только для редких вещей (ГОСТ, табл. 6)."],
-      ["ok", "Мойку разумно поднять на 100 мм выше плиты: работать надо стоя прямо, а не согнувшись (Нойферт)."]
+      ["ok", "Столешница на высоте 850–900 мм от пола, глубина 600 мм."],
+      ["ok", "Цоколь от 80 мм высотой и утоплен от фасада хотя бы на 50 мм, чтобы не бить ноги."],
+      ["ok", "Верхние шкафы внутри от 270 мм глубиной, удобнее 320–350 мм. От столешницы до них не меньше 500 мм."],
+      ["ok", "Вытяжка над " + (gas ? "газовой плитой не ниже 650 мм" : "электрической плитой не ниже 450 мм") + " от варочной поверхности."],
+      ["ok", "Верхняя полка, до которой тянутся каждый день, не выше 1 900 мм. Выше только для редких вещей."],
+      ["ok", "Мойку разумно поднять на 100 мм выше плиты: работать надо стоя прямо, а не согнувшись."]
     ];
     if (rest >= 0) out.checks.unshift(["ok", "После техники и рабочих зон остаётся " + mm(rest) + " фронта под нижние шкафы для посуды и продуктов."]);
     out.scheme = strip(mods, have, "стена");
   }
   function kitchenNote(k) {
-    return { fridge: "ширина по объёму, у Нойферта 550–800 мм", sink: S.kitchen.sink > 600 ? "размер мойки у Нойферта" : "нижний модуль 600 мм, у Нойферта модули 300–600 мм", dw: "встраиваемая, 450 или 600 мм", work: "между мойкой и плитой, не меньше 600 мм (Нойферт)", cook: "модуль под варочную панель", side: "по другую сторону от плиты, не меньше 300 мм (Нойферт)", oven: "высокий шкаф 2 050–2 100 мм (Нойферт)" }[k];
+    return { fridge: "ширина зависит от объёма, 550–800 мм", sink: S.kitchen.sink > 600 ? "чаша и крыло для сушки" : "нижний модуль 600 мм", dw: "встраиваемая, 450 или 600 мм", work: "между мойкой и плитой, не меньше 600 мм", cook: "модуль под варочную панель", side: "по другую сторону от плиты, не меньше 300 мм", oven: "высокий шкаф 2 050–2 100 мм" }[k];
   }
 
-  function utility(out) {
-    var P = S.place, mods = [], min = 0, best = 0;
-    UTIL.forEach(function (u) { if (S.util[u.k]) { mods.push([u.k, u.label, u.min, u.best]); min += u.min; best += u.best; } });
-    out.have = P.W; out.need = min; out.best = best; out.haveLabel = "длина стены";
-    out.rows = mods.map(function (m) { return [m[1], m[3] > m[2] ? "удобнее " + mm(m[3]) : "", m[2]]; });
-    out.checks = [];
-    if (best > min) out.checks.push([P.W >= best ? "ok" : "warn", "Чтобы было удобно, Нойферт даёт этому набору " + mm(best) + "."]);
-    out.checks.push(["ok", "Глубину ниши под стиральную и сушильную машину сверяйте с паспортом техники: ГОСТ на мебель встраиваемую технику не нормирует."]);
-    if (S.util.iron) out.checks.push(["ok", "Шкаф с откидной гладильной доской у Нойферта 450 мм шириной и 2 250 мм высотой, гладильная доска около 1 700 мм длиной."]);
-    if (S.util.mop) out.checks.push(["ok", "Высокий шкаф для швабры и щёток у Нойферта 600 мм шириной и 2 050 мм высотой."]);
-    out.checks.push(["ok", "Если это отдельная комната со всем набором, Нойферт даёт ей длину от 3 800 мм, удобно 4 600 мм."]);
-    out.scheme = strip(mods.map(function (m) { return [m[0], m[1], m[2]]; }), P.W, "стена");
-  }
 
   // ---------- Схемы ----------
   var COL = { long: "#c5d3e1", short: "#e2e9f0", shelf: "#f1f0ee", shoe: "#d9c8b6", top: "#ebe6df" };
@@ -628,17 +556,12 @@
   var NOT_YET = {
     hall: "Это ещё не ваша прихожая, а примерное количество штанг и полок, которое понадобится, чтобы уместить всю верхнюю одежду и обувь.",
     bed: "Это ещё не ваш шкаф, а примерное количество штанг и полок, которое понадобится, чтобы уместить все ваши вещи.",
-    kids: "Это ещё не ваш шкаф, а примерное количество штанг и полок, которое понадобится, чтобы уместить все детские вещи.",
-    walk: "Это ещё не ваша гардеробная, а примерное количество штанг и полок, которое понадобится, чтобы уместить все ваши вещи.",
-    kitchen: "Это ещё не ваша кухня, а примерная длина модулей, которая понадобится, чтобы уместить технику, мойку и рабочую зону.",
-    utility: "Это ещё не ваш хозблок, а примерный набор отделений, который понадобится, чтобы уместить технику и всё для уборки."
+    kitchen: "Это ещё не ваша кухня, а примерная длина модулей, которая понадобится, чтобы уместить технику, мойку и рабочую зону."
   };
 
   var UNSEEN = {
     wardrobe: ["стены и углы в квартире не идеально ровные, а ниша внизу и вверху бывает разной;", "в зону шкафа попадают плинтус, карниз, батарея, розетка или выключатель;", "распашная дверь или ящик упираются в кровать, дверь комнаты или откос;", "ваши вещи висят и лежат не так, как у среднего человека из норматива."],
-    walk: ["где именно дверь и куда она открывается, а от этого зависит, какая стена работает;", "вентиляция: Нойферт отдельно пишет, что кладовые для одежды должны проветриваться;", "свет внутри и розетка под отпариватель;", "стены и углы не идеально ровные, а готовые системы хранения под это не подстраиваются."],
-    kitchen: ["где выведены вода, канализация, газ и розетки: Нойферт отдельно пишет, что в готовых кухнях приходится считаться с подводками;", "короб, трубы, батарея или окно на стене кухни;", "куда открываются дверцы холодильника, духовки и посудомойки и не упираются ли в соседние фасады;", "ваш рост: от него зависит высота столешницы и верхних шкафов."],
-    utility: ["где выведены вода, слив и розетка под стиральную машину;", "глубина машин по паспорту и место под шланги за ними;", "куда открывается дверца машины и встанет ли рядом человек с корзиной;", "вентиляция: влажному белью и технике нужен воздух."]
+    kitchen: ["где выведены вода, канализация, газ и розетки: под них подстраивают расстановку модулей;", "короб, трубы, батарея или окно на стене кухни;", "куда открываются дверцы холодильника, духовки и посудомойки и не упираются ли в соседние фасады;", "ваш рост: от него зависит высота столешницы и верхних шкафов."]
   };
 
   // ---------- Отрисовка ----------
@@ -661,9 +584,9 @@
     document.getElementById("sent").classList.toggle("hidden", !OPEN);
     store("calcState", JSON.stringify(S));
 
-    var group = (S.type === "kitchen" || S.type === "utility" || S.type === "walk") ? S.type : "wardrobe";
+    var group = S.type === "kitchen" ? "kitchen" : "wardrobe";
     document.getElementById("notYet").textContent = NOT_YET[S.type] || NOT_YET.bed;
-    document.getElementById("unseen").innerHTML =UNSEEN[group].map(function (x) { return "<li>" + x + "</li>"; }).join("");
+    document.getElementById("unseen").innerHTML = UNSEEN[group].map(function (x) { return "<li>" + x + "</li>"; }).join("");
     LAST = T().name + "; место " + fmt(o.have) + " мм; по нормам " + fmt(o.need) + " мм; " + (d < 0 ? "не хватает " + fmt(-d) : "запас " + fmt(d)) + " мм; источник: " + source();
   }
 
