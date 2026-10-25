@@ -163,7 +163,7 @@
     <section class="next" id="gate">
       <h2>Получить расчёт в Telegram</h2>
       <p id="notYet"></p>
-      <p>Оставьте контакты, и я пришлю этот расчёт в Telegram: схему, таблицу по отделениям и список, что проверить в проекте. А как из него сделать мебель, которая встанет в вашу квартиру, давайте обсудим на созвоне: расскажете, что храните и что не устраивает сейчас, а я посмотрю расчёт и подскажу, с чего начать.</p>
+      <p>Оставьте контакты, и я пришлю этот расчёт в Telegram: схему, таблицу по отделениям и список, что проверить в проекте.</p>
       <form id="leadForm" novalidate>
         <label class="f">Как к вам обращаться?<input id="fName" type="text" autocomplete="given-name" maxlength="100"></label>
         <div class="phone">
@@ -1041,7 +1041,6 @@
   // Библиотека jsPDF и шрифты (Montserrat и Oswald, только латиница и кириллица) лежат рядом со страницей и грузятся при отправке.
   var pdfAssets = null;
   function toB64(buf) { var b = new Uint8Array(buf), s = "", i; for (i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(s); }
-  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
   function loadPdfAssets() {
     if (pdfAssets) return pdfAssets;
     var names = ["Montserrat-Light", "Montserrat-Regular", "Montserrat-SemiBold", "Oswald-Medium", "Oswald-SemiBold"];
@@ -1089,36 +1088,25 @@
       sources: [].map.call(document.querySelectorAll(".sources li"), t)
     };
   }
+  function iconSvg(inner) {
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#2E3222" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' + inner + "</svg>";
+  }
   function makePdf() {
     return loadPdfAssets().then(function (F) {
-      var R = readResult(), vb = R.svg.viewBox.baseVal, font = "@font-face{font-family:Montserrat;src:url(data:font/ttf;base64," + F["Montserrat-Regular"] + ")}";
-      // Две подписи схемы («место…» сверху и «нужно…» снизу, font-size 12) на высокой схеме после уменьшения становятся мелкими.
-      // Поэтому в PDF-копии они крупнее (около 8,5 pt) и вынесены в добавленные поля сверху и снизу.
-      var k = Math.min(507 / vb.width, 450 / vb.height), fs = Math.max(11, 8.5 / k), pad = Math.round(fs * 2.2), SH = vb.height + 2 * pad;
-      var cl = R.svg.cloneNode(true), lab = cl.querySelectorAll('text[font-size="12"]');
-      if (lab[0]) { lab[0].setAttribute("y", Math.round(-fs * 0.45)); lab[0].setAttribute("font-size", fs.toFixed(1)); }
-      if (lab[1]) { lab[1].setAttribute("y", Math.round(vb.height + fs * 1.35)); lab[1].setAttribute("font-size", fs.toFixed(1)); }
-      cl.setAttribute("viewBox", "0 " + (-pad) + " " + vb.width + " " + SH);
-      var scheme = new XMLSerializer().serializeToString(cl).replace("<svg", '<svg width="' + vb.width + '" height="' + SH + '"').replace(">", "><defs><style>" + font + "</style></defs>");
-      var lg = null;
-      if (R.legend.length) {
-        var cx = document.createElement("canvas").getContext("2d"), x = 0, y = 0, parts = [];
-        cx.font = "12.5px Montserrat, sans-serif";
-        R.legend.forEach(function (it) {
-          var iw = 20 + cx.measureText(it.name).width + 16;
-          if (x > 0 && x + iw > vb.width) { x = 0; y += 22; }
-          var mark = it.icon ? '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#2E3222" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' + it.icon + "</svg>"
-            : '<rect x="0" y="1" width="12" height="12" rx="3" fill="' + (it.color || "#cccccc") + '"/>';
-          parts.push('<g transform="translate(' + x.toFixed(1) + "," + y + ')">' + mark + '<text x="' + (it.icon ? 20 : 17) + '" y="12" font-size="12.5" fill="#6b6e62" font-family="Montserrat, sans-serif">' + esc(it.name) + "</text></g>");
-          x += iw;
-        });
-        lg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + vb.width + '" height="' + (y + 20) + '"><defs><style>' + font + "</style></defs>" + parts.join("") + "</svg>";
-        lg = [lg, vb.width, y + 20];
-      }
-      return Promise.all([svgToPng(scheme, vb.width, SH), lg ? svgToPng(lg[0], lg[1], lg[2]) : null]).then(function (img) { return drawPdf(F, R, img[0], img[1]); });
+      var R = readResult(), vb = R.svg.viewBox.baseVal;
+      // Текст внутри картинки из SVG на iPhone не всегда рисуется, поэтому подписи схемы и легенды пишет сам jsPDF,
+      // а в картинки идут только фигуры и иконки. Две подписи схемы («место…» сверху, «нужно…» снизу) убираем из её копии.
+      var cl = R.svg.cloneNode(true), caps = [].map.call(cl.querySelectorAll('text[font-size="12"]'), function (t) {
+        var c = { text: plain(t.textContent), color: t.getAttribute("fill") || "#2E3222", x: parseFloat(t.getAttribute("x")) || 0, anchor: t.getAttribute("text-anchor") || "start" };
+        t.parentNode.removeChild(t);
+        return c;
+      });
+      var scheme = new XMLSerializer().serializeToString(cl).replace("<svg", '<svg width="' + vb.width + '" height="' + vb.height + '"');
+      var icons = R.legend.map(function (it) { return it.icon ? svgToPng(iconSvg(it.icon), 48, 48) : null; });
+      return Promise.all([svgToPng(scheme, vb.width, vb.height)].concat(icons)).then(function (img) { return drawPdf(F, R, img[0], img.slice(1), caps); });
     });
   }
-  function drawPdf(F, R, schemeImg, legendImg) {
+  function drawPdf(F, R, schemeImg, icons, caps) {
     var doc = new window.jspdf.jsPDF({ unit: "pt", format: "a4", compress: true });
     var FONTS = { MontL: "Montserrat-Light", Mont: "Montserrat-Regular", MontSB: "Montserrat-SemiBold", OswM: "Oswald-Medium", OswSB: "Oswald-SemiBold" };
     Object.keys(FONTS).forEach(function (k) { doc.addFileToVFS(FONTS[k] + ".ttf", F[FONTS[k]]); doc.addFont(FONTS[k] + ".ttf", k, "normal"); });
@@ -1136,8 +1124,11 @@
     }
     function heading(text, size, col, gap) { fnt("OswSB", size, col, 0.3); ensure(size * 2); y += size * 1.05; doc.text(text.toUpperCase(), L, y); y += gap || size * 0.5; }
     function image(img, maxH) {
-      var k = Math.min(W / img.w, maxH / img.h), w = img.w * k, h = img.h * k;
-      ensure(h + 8); doc.addImage(img.data, "PNG", L + (W - w) / 2, y, w, h); y += h + 8;
+      var k = Math.min(W / img.w, maxH / img.h), w = img.w * k, h = img.h * k, x0 = L + (W - w) / 2;
+      ensure(h + 30); y += 12; doc.addImage(img.data, "PNG", x0, y, w, h);
+      var at = { x: x0, y: y, k: k, h: h };
+      y += h + 24;
+      return at;
     }
 
     chrome();
@@ -1152,8 +1143,28 @@
     y += 12; rule(y, 1.5, BLUE); y += 8;
     heading(R.verdict, 22, R.good ? BLUE : TERRA, 8);
     para(R.sub, "Mont", 10.5, INK, W, 6);
-    image(schemeImg, 450);
-    if (legendImg) { var lh = W * legendImg.h / legendImg.w; ensure(lh + 6); doc.addImage(legendImg.data, "PNG", L, y, W, lh); y += lh + 8; }
+    var at = image(schemeImg, 400);
+    caps.forEach(function (c, i) {
+      fnt("MontSB", 8.5, c.color);
+      doc.text(c.text, at.x + c.x * at.k, i === 0 ? at.y - 3 : at.y + at.h + 10, { align: c.anchor === "end" ? "right" : c.anchor === "middle" ? "center" : "left" });
+    });
+    if (R.legend.length) {
+      fnt("Mont", 9, SOFT);
+      var lp = [], lx = 0, lrow = 0;
+      R.legend.forEach(function (it) {
+        var iw = 16 + doc.getTextWidth(it.name) + 14;
+        if (lx > 0 && lx + iw > W) { lx = 0; lrow++; }
+        lp.push({ x: lx, row: lrow }); lx += iw;
+      });
+      ensure((lrow + 1) * 16 + 4);
+      R.legend.forEach(function (it, i) {
+        var px = L + lp[i].x, py = y + lp[i].row * 16;
+        if (icons[i]) doc.addImage(icons[i].data, "PNG", px, py, 11, 11);
+        else if (it.color) { var rgb = it.color.match(/\d+/g) || [204, 204, 204]; doc.setFillColor(+rgb[0], +rgb[1], +rgb[2]); doc.roundedRect(px, py + 1, 9, 9, 2, 2, "F"); }
+        fnt("Mont", 9, SOFT); doc.text(it.name, px + 16, py + 8.5);
+      });
+      y += (lrow + 1) * 16 + 2;
+    }
     if (R.note) para(R.note, "MontL", 9.5, SOFT, W, 6);
 
     // Таблица по отделениям
