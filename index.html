@@ -702,7 +702,8 @@
   var LAST = "";
   function source() {
     var s = ""; try { s = new URLSearchParams(location.search).get("src") || ""; } catch (e) {}
-    return s === "ig" ? "Instagram" : s === "tg" ? "Telegram-канал" : (s || "прямая ссылка");
+    var names = { tg: "Telegram-канал", ig: "Instagram: ManyChat", "ig-stories": "Instagram: сториз", "ig-bio": "Instagram: шапка профиля" };
+    return names[s] || s || "прямая ссылка";
   }
   var msgEl = document.getElementById("formmsg"), box = document.getElementById("yaform");
   document.getElementById("leadBtn").addEventListener("click", function () {
