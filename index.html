@@ -93,7 +93,6 @@
   #lead { margin-top: 18px; }
   #yaform iframe { display: block; width: 100%; height: 900px; border: 0; border-radius: 12px; background: var(--white); margin-top: 16px; }
   .policy a { color: var(--white); }
-  .locked { position: relative; filter: blur(5px); opacity: .55; pointer-events: none; user-select: none; max-height: 420px; overflow: hidden; }
   .policy { font-size: 12.5px; color: #d3dde8; margin: 8px 0 0; }
   .formmsg { font-size: 14px; color: var(--white); min-height: 1em; margin: 10px 0 0; }
   button.btn { width: 100%; border: 0; cursor: pointer; }
@@ -142,23 +141,23 @@
 
     <section class="result" id="result" aria-live="polite"></section>
 
-    <section class="next" id="gate">
-      <h2>Полный расчёт</h2>
-      <p>Оставьте контакты, и здесь откроются схема, расчёт по отделениям и что проверить в проекте. Расчёт с вашими размерами придёт и мне, чтобы я могла подсказать по нему.</p>
-      <div id="lead">
-        <button class="btn" type="button" id="leadBtn">Открыть полный расчёт</button>
-        <p class="formmsg" id="formmsg" role="status"></p>
-        <div id="yaform"></div>
-        <p class="policy">Как мы храним и защищаем данные: <a href="policy.html" target="_blank">Политика обработки персональных данных</a></p>
-      </div>
-    </section>
-
-    <section class="next hidden" id="after">
+    <section class="next" id="after">
       <h2>Что калькулятор не увидит</h2>
       <p>Он считает по нормам, но не знает вашу квартиру. А мебель чаще всего не встаёт как раз из-за неё:</p>
       <ul id="unseen"></ul>
       <p>Если вам нужен чертёж мебели в размеры вашей квартиры, без риска, что она не встанет или ящики не откроются, следующий шаг: консультация по мебели. Я приеду на замер, сниму размеры, нарисую чертёж с расчётом наполнения под ваши вещи и помогу подобрать цвета и покрытия. Чертёж останется у вас.</p>
-      <p><b>Ваша заявка уже у нас:</b> напишем вам в мессенджер и обсудим расчёт.</p>
+      <p class="hidden" id="sent"><b>Ваша заявка уже у нас:</b> напишем вам в мессенджер и обсудим расчёт.</p>
+    </section>
+
+    <section class="next" id="gate">
+      <h2>Обсудить расчёт</h2>
+      <p>Оставьте контакты, и расчёт с вашими размерами придёт мне. Я напишу вам в мессенджер и подскажу по нему.</p>
+      <div id="lead">
+        <button class="btn" type="button" id="leadBtn">Обсудить расчёт</button>
+        <p class="formmsg" id="formmsg" role="status"></p>
+        <div id="yaform"></div>
+        <p class="policy">Как мы храним и защищаем данные: <a href="policy.html" target="_blank">Политика обработки персональных данных</a></p>
+      </div>
     </section>
 
     <details>
@@ -663,7 +662,6 @@
     if (d < 0) h += '<p class="verdict bad">Не хватает ' + mm(-d) + '</p>';
     else h += '<p class="verdict good">Помещается, запас ' + mm(d) + '</p>';
     h += '<p class="sub">По нормам нужно от ' + mm(o.need) + ', ' + o.haveLabel + ' ' + mm(o.have) + '.</p>';
-    if (!OPEN) h += '<div class="locked" aria-hidden="true">';
     h += o.scheme;
     if (o.note) h += '<p class="note">' + o.note + '</p>';
     h += '<table>';
@@ -672,10 +670,9 @@
     h += '<h3>Что проверить в проекте</h3><ul class="checks">';
     o.checks.forEach(function (c) { h += '<li class="' + c[0] + '">' + c[1] + '</li>'; });
     h += '</ul>';
-    if (!OPEN) h += '</div>';
     document.getElementById("result").innerHTML = h;
     document.getElementById("gate").classList.toggle("hidden", OPEN);
-    document.getElementById("after").classList.toggle("hidden", !OPEN);
+    document.getElementById("sent").classList.toggle("hidden", !OPEN);
     store("calcState", JSON.stringify(S));
 
     var group = (S.type === "kitchen" || S.type === "utility" || S.type === "walk") ? S.type : "wardrobe";
@@ -709,7 +706,7 @@
 
   window.__calcOpen = function () {
     OPEN = true; store("calcOpen", "1"); box.innerHTML = "";
-    render(); document.getElementById("result").scrollIntoView({ behavior: "smooth" });
+    render(); document.getElementById("after").scrollIntoView({ behavior: "smooth" });
   };
 
   // Вернулись после формы на основной странице: восстанавливаем введённое.
