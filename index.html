@@ -198,13 +198,14 @@
     stackW: 300, linenW: 400, stackH: 250, shelfStep: 300,
     thin: 12, thick: 60, towel: 60, bedding: 0.11, hat: 300, hatShelf: 170, topMin: 200, // антресоль ниже 200 мм не считаю
     // Стопки не выше, чем у Нойферта, иначе разваливаются: 12 пододеяльников 140 мм, 12 простыней 130 мм,
-    // 24 наволочки 160 мм; шапки и шарфы как рубашки, 120 мм.
-    duvetPer: 12, sheetPer: 12, pillowPer: 24, accStackH: 120,
+    // 24 наволочки 160 мм.
+    duvetPer: 12, sheetPer: 12, pillowPer: 24,
     panel: 16, walkDepth: 550, walkPass: 900, dressArea: 1500,
     // Детские вещи, шарфы и сумки: норм нет, допущения Ники (см. вики, nika-lead-magnet-plan).
-    kidCoat: 60, kidZone: 900, kidPair: 180, kidHat: 200, scarf: 40, bag: 300, bagRow: 350,
-    // Шапки складывают стопкой, как рубашки. Торцевой штанге нужно отделение шириной с вешалку.
-    hatT: 50, kidHatT: 40, endW: 650, kidEndW: 450
+    kidCoat: 60, kidZone: 900, kidPair: 180, kidHat: 200, bag: 300, bagRow: 350,
+    // Стопки по живым замерам: 3 шапки 300 × 200 × 120 мм, как рубашки у Нойферта; 4 шарфа 400 × 350 × 200 мм.
+    // Детские шапки считаю как взрослые. Торцевой штанге нужно отделение шириной с вешалку.
+    hatPer: 3, hatStack: [300, 200], scarfPer: 4, scarfStack: [400, 350], endW: 650, kidEndW: 450
   };
 
   function fmt(n) { return Math.round(n).toLocaleString("ru-RU"); }
@@ -481,7 +482,9 @@
 
     // Шапки, шарфы и сумки на полках над штангой; не хватает места — отдельная секция с полками.
     r.hats = c.hats || 0;
-    r.accLen = (Math.ceil((c.hats || 0) / Math.floor(N.accStackH / N.hatT)) + Math.ceil((c.khats || 0) / Math.floor(N.accStackH / N.kidHatT)) + Math.ceil((c.scarves || 0) / Math.floor(N.accStackH / N.scarf))) * N.stackW + (c.bags || 0) * N.bag;
+    // Стопку кладу длинной стороной вглубь, если полка позволяет: так она занимает меньше ширины.
+    function along(st) { return D >= st[0] ? st[1] : st[0]; }
+    r.accLen = (Math.ceil((c.hats || 0) / N.hatPer) + Math.ceil((c.khats || 0) / N.hatPer)) * along(N.hatStack) + Math.ceil((c.scarves || 0) / N.scarfPer) * along(N.scarfStack) + (c.bags || 0) * N.bag;
     var base = [r.longW, r.kidW, r.shortW, r.shelfW, r.shoeW].reduce(function (a, x) { return a + x; }, 0);
     var topLevels = r.topH >= N.bagRow ? Math.floor(r.topH / N.bagRow) : r.topH >= N.hatShelf ? 1 : 0;
     r.accCap = Math.max(0, base) * topLevels;
@@ -531,7 +534,7 @@
     if (type === "hall") {
       if (r.accLen) {
         if (r.topH < N.hatShelf) k.push(["warn", "Над штангой нет места под полку для головных уборов: ей нужно от 170 мм по высоте и от 240 мм в глубину. Шапки, шарфы и сумки уходят в отдельную секцию с полками."]);
-        else k.push([r.accW ? "warn" : "ok", "Головные уборы, шарфы и сумки кладут на полку над штангой, глубина полки от 240 мм. Шапки и шарфы складываю стопками не выше 120 мм, как рубашки, иначе разваливаются. Им нужно около " + mm(r.accLen) + " полок, над штангой есть " + mm(r.accCap) + (r.accW ? ", остальное в отдельную секцию." : ".")]);
+        else k.push([r.accW ? "warn" : "ok", "Головные уборы, шарфы и сумки кладут на полку над штангой, глубина полки от 240 мм. Шапки складываю по 3 в стопку 300 × 200 мм и 120 мм высотой, шарфы по 4 в стопку 400 × 350 мм и 200 мм высотой: выше они разваливаются. Им нужно около " + mm(r.accLen) + " полок, над штангой есть " + mm(r.accCap) + (r.accW ? ", остальное в отдельную секцию." : ".")]);
       }
       k.push(["ok", "Отделение для обуви: от 320 мм глубиной, для туфель от 150 мм высотой, для сапог от 400 мм."]);
     }
