@@ -1072,6 +1072,25 @@
     }).catch(function () { btn.disabled = false; leadMsg.textContent = "Не получилось отправить. Попробуйте ещё раз."; });
   });
 
+  // Режим для тех, кто пришёл из анкеты (?anketa=1): контакты они уже оставили, поэтому вместо формы одна кнопка скачивания PDF.
+  if (/[?&]anketa=1(&|$)/.test(location.search)) {
+    var gate = document.getElementById("gate");
+    gate.querySelector("h2").textContent = "Скачать расчёт";
+    gate.querySelectorAll("p")[1].textContent = "Вы уже ответили на анкету, поэтому контакты второй раз не нужны. Нажмите кнопку, и расчёт сохранится PDF-файлом: схема, таблица по отделениям и список, что проверить в проекте.";
+    leadForm.classList.add("hidden");
+    var dl = document.createElement("div");
+    dl.innerHTML = '<button class="btn" type="button" id="dlBtn">Скачать расчёт PDF</button><p class="formmsg" id="dlMsg" role="status"></p>';
+    gate.appendChild(dl);
+    document.getElementById("dlBtn").addEventListener("click", function () {
+      var b = this, m = document.getElementById("dlMsg"); b.disabled = true; m.textContent = "Готовлю расчёт…";
+      makePdf().then(function (pdf) {
+        var a = document.createElement("a"); a.href = pdf.url; a.download = "Расчёт хранения.pdf"; document.body.appendChild(a); a.click(); a.remove();
+        m.innerHTML = 'Готово. Если файл не скачался, <a href="' + pdf.url + '" download="Расчёт хранения.pdf">нажмите здесь</a>. Захотите обсудить расчёт, напишите Нике: <a href="https://t.me/NikaCage">@NikaCage</a>.';
+        b.disabled = false;
+      }).catch(function () { b.disabled = false; m.textContent = "Не получилось подготовить файл. Попробуйте ещё раз."; });
+    });
+  }
+
   // ---------- PDF с расчётом в стиле калькулятора ----------
   // Библиотека jsPDF и шрифты (Montserrat и Oswald, только латиница и кириллица) лежат рядом со страницей и грузятся при отправке.
   var pdfAssets = null;
