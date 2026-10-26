@@ -1077,7 +1077,7 @@
     var gate = document.getElementById("gate");
     gate.querySelector("h2").textContent = "Скачать расчёт";
     gate.querySelectorAll("p")[1].textContent = "Вы уже ответили на анкету, поэтому контакты второй раз не нужны. Нажмите кнопку, и расчёт сохранится PDF-файлом: схема, таблица по отделениям и список, что проверить в проекте.";
-    leadForm.classList.add("hidden");
+    leadForm.style.setProperty("display", "none", "important"); // resetLead() при новом расчёте снимает hidden, поэтому прячем стилем
     var dl = document.createElement("div");
     dl.innerHTML = '<button class="btn" type="button" id="dlBtn">Скачать расчёт PDF</button><p class="formmsg" id="dlMsg" role="status"></p>';
     gate.appendChild(dl);
